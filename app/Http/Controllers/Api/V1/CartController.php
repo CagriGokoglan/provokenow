@@ -101,7 +101,7 @@ class CartController extends Controller
 
     private function present(Cart $cart): CartResource
     {
-        $cart->loadMissing('items.product.decks');
+        $cart->loadMissing('items.product.decks', 'items.product.upsellRules');
 
         return new CartResource(['cart' => $cart, 'priced' => $this->pricing->price($cart)]);
     }

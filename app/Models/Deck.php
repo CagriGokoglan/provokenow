@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DeckSegment;
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -52,6 +53,11 @@ class Deck extends Model
     public function isVaultProtected(): bool
     {
         return in_array($this->segment->value, config('provoke.vault.protected_segments', []), true);
+    }
+
+    public function ogImageUrl(): ?string
+    {
+        return MediaUrl::resolve($this->og_image);
     }
 
     /** @return list<string> */

@@ -32,12 +32,12 @@ class CartResolver
                 $this->merge($guestCart, $cart);
             }
 
-            return $cart?->load('items.product.decks');
+            return $cart?->load('items.product.decks', 'items.product.upsellRules');
         }
 
         $cart = $guestCart ?? ($create ? Cart::create(['token' => Str::random(48)]) : null);
 
-        return $cart?->load('items.product.decks');
+        return $cart?->load('items.product.decks', 'items.product.upsellRules');
     }
 
     private function merge(Cart $from, Cart $into): void

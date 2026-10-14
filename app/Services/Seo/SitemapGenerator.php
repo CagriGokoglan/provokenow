@@ -60,7 +60,7 @@ class SitemapGenerator
                 'lastmod' => $deck->updated_at?->toAtomString(),
                 'changefreq' => 'weekly',
                 'priority' => '0.8',
-                'image' => $deck->og_image,
+                'image' => $deck->ogImageUrl(),
             ];
         }
 
@@ -70,7 +70,7 @@ class SitemapGenerator
                 'lastmod' => $product->updated_at?->toAtomString(),
                 'changefreq' => 'weekly',
                 'priority' => '0.7',
-                'image' => $product->og_image ?: ($product->images()[0] ?? null),
+                'image' => $product->ogImageUrl() ?: ($product->images()[0] ?? null),
             ];
         }
     }

@@ -5,6 +5,8 @@ namespace App\Models;
 use App\Enums\EntitlementStatus;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -19,7 +21,7 @@ use Laravel\Sanctum\HasApiTokens;
 // `role` is intentionally not mass-assignable; set it explicitly (see AdminUserSeeder).
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, HasUuids, Notifiable;
@@ -78,5 +80,16 @@ class User extends Authenticatable
     public function isStaff(): bool
     {
         return $this->role->isStaff();
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === UserRole::SuperAdmin;
+    }
+
+    /** /admin is restricted to admin and superadmin roles. */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $this->isStaff();
     }
 }

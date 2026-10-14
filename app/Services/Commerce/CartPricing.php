@@ -31,9 +31,10 @@ class CartPricing
             $discount = 0;
 
             $anchor = $item->upsell_anchor_item_id ? $items->get($item->upsell_anchor_item_id) : null;
-            if ($anchor && $this->upsell->isBundleEligible($anchor->product, $product)) {
-                // One discounted add-on per anchor deck copy.
-                $discount = $this->upsell->unitDiscountCents($product) * min($item->quantity, $anchor->quantity);
+            $percent = $anchor ? $this->upsell->discountPercentFor($anchor->product, $product) : null;
+            if ($percent) {
+                // One discounted add-on per anchor copy.
+                $discount = $this->upsell->unitDiscountCents($product, $percent) * min($item->quantity, $anchor->quantity);
             }
 
             $lines[] = [

@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\UserEntitlement;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 class EntitlementService
@@ -26,18 +27,18 @@ class EntitlementService
     }
 
     /**
-     * Grant lifetime access to the given decks. Idempotent: an existing active entitlement
-     * is reused (and made lifetime if it had an expiry) rather than duplicated.
-     * Must run inside a transaction.
+     * Grant access to the given decks (lifetime unless $expiresAt is given). Idempotent: an
+     * existing active entitlement is reused rather than duplicated, and existing access is
+     * only ever extended, never shortened. Must run inside a transaction.
      *
      * @param  list<string>  $deckIds
      * @return Collection<int, UserEntitlement>
      */
-    public function grant(User|string $user, array $deckIds, ?Order $order = null): Collection
+    public function grant(User|string $user, array $deckIds, ?Order $order = null, ?CarbonInterface $expiresAt = null): Collection
     {
         $userId = $user instanceof User ? $user->getKey() : $user;
 
-        return collect(array_unique($deckIds))->map(function (string $deckId) use ($userId, $order) {
+        return collect(array_unique($deckIds))->map(function (string $deckId) use ($userId, $order, $expiresAt) {
             $existing = UserEntitlement::query()
                 ->where('user_id', $userId)
                 ->where('deck_id', $deckId)
@@ -46,8 +47,12 @@ class EntitlementService
                 ->first();
 
             if ($existing) {
-                if ($existing->expires_at !== null) {
-                    $existing->update(['expires_at' => null]);
+                $extended = ($existing->expires_at === null || $expiresAt === null)
+                    ? null
+                    : max($existing->expires_at, $expiresAt);
+
+                if ($existing->expires_at != $extended) {
+                    $existing->update(['expires_at' => $extended]);
                 }
 
                 return $existing;
@@ -58,6 +63,7 @@ class EntitlementService
                 'deck_id' => $deckId,
                 'order_id' => $order?->getKey(),
                 'granted_at' => now(),
+                'expires_at' => $expiresAt,
                 'status' => EntitlementStatus::Active,
             ]);
         })->values();

@@ -2,7 +2,10 @@
 
 namespace App\Enums;
 
-enum DeckSegment: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
+
+enum DeckSegment: string implements HasColor, HasLabel
 {
     case LightIgnition = 'Light_Ignition';
     case MediumSpice = 'Medium_Spice';
@@ -26,6 +29,20 @@ enum DeckSegment: string
             self::LightIgnition => 'Couples who want playful, low-pressure ways to spark conversation and closeness.',
             self::MediumSpice => 'Couples ready to turn up the heat with bolder, more daring prompts.',
             self::AdvancedTaboo => 'Experienced couples exploring adventurous themes, with consent and safety notes on every card.',
+        };
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label();
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::LightIgnition => 'success',
+            self::MediumSpice => 'warning',
+            self::AdvancedTaboo => 'danger',
         };
     }
 }

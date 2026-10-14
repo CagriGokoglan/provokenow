@@ -27,7 +27,7 @@ class SeoMetadataService
                 ?: "{$deck->title}: a {$deck->segment->label()} card deck for couples from {$brand}."
                     .($keywords !== '' ? " Themes: {$keywords}." : ''),
             canonical: $deck->canonical_url ?: FrontendUrl::deck($deck),
-            image: $deck->og_image,
+            image: $deck->ogImageUrl(),
             type: 'product',
         );
     }
@@ -40,7 +40,7 @@ class SeoMetadataService
             title: $product->meta_title ?: "{$product->name} | {$brand}",
             description: $product->meta_description ?: ($product->description ?: "{$product->name} from {$brand}."),
             canonical: $product->canonical_url ?: FrontendUrl::product($product),
-            image: $product->og_image ?: ($product->images()[0] ?? null),
+            image: $product->ogImageUrl() ?: ($product->images()[0] ?? null),
             type: 'product',
         );
     }

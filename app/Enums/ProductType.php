@@ -2,7 +2,10 @@
 
 namespace App\Enums;
 
-enum ProductType: string
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasLabel;
+
+enum ProductType: string implements HasColor, HasLabel
 {
     case DigitalDeck = 'digital_deck';
     case PodPhysicalDeck = 'pod_physical_deck';
@@ -19,5 +22,25 @@ enum ProductType: string
     public function shipsByDefault(): bool
     {
         return $this !== self::DigitalDeck;
+    }
+
+    public function getLabel(): string
+    {
+        return match ($this) {
+            self::DigitalDeck => 'Digital Deck',
+            self::PodPhysicalDeck => 'POD Physical Deck',
+            self::PhysicalAccessory => 'Physical Accessory',
+            self::Bundle => 'Bundle',
+        };
+    }
+
+    public function getColor(): string
+    {
+        return match ($this) {
+            self::DigitalDeck => 'info',
+            self::PodPhysicalDeck => 'primary',
+            self::PhysicalAccessory => 'warning',
+            self::Bundle => 'success',
+        };
     }
 }

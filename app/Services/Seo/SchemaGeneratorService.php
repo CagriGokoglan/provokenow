@@ -45,7 +45,7 @@ class SchemaGeneratorService
     public function product(Product $product): array
     {
         $url = $product->canonical_url ?: FrontendUrl::product($product);
-        $images = $product->images() ?: array_filter([$product->og_image]);
+        $images = $product->images() ?: array_filter([$product->ogImageUrl()]);
 
         return array_filter([
             '@type' => 'Product',

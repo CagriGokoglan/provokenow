@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProductType;
+use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -46,6 +47,12 @@ class Product extends Model
         return $this->belongsToMany(Deck::class, 'product_deck_claims')->withTimestamps();
     }
 
+    /** Admin-curated upsell offers shown when this product is in the cart. */
+    public function upsellRules(): HasMany
+    {
+        return $this->hasMany(ProductUpsell::class)->orderBy('sort_order');
+    }
+
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
@@ -79,7 +86,15 @@ class Product extends Model
     /** @return list<string> */
     public function images(): array
     {
-        return array_values((array) ($this->metadata['images'] ?? []));
+        return array_values(array_filter(array_map(
+            fn ($image) => MediaUrl::resolve(is_string($image) ? $image : null),
+            (array) ($this->metadata['images'] ?? []),
+        )));
+    }
+
+    public function ogImageUrl(): ?string
+    {
+        return MediaUrl::resolve($this->og_image);
     }
 
     /**

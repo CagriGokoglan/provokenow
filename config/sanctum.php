@@ -37,7 +37,8 @@ return [
     |
     */
 
-    'guard' => ['web'],
+    // Token-only API: never authenticate API calls from a web (admin panel) session.
+    'guard' => [],
 
     /*
     |--------------------------------------------------------------------------
