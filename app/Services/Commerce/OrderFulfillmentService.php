@@ -4,6 +4,7 @@ namespace App\Services\Commerce;
 
 use App\Enums\FulfillmentStatus;
 use App\Enums\PaymentStatus;
+use App\Events\OrderPaid;
 use App\Exceptions\BusinessRuleException;
 use App\Models\CartItem;
 use App\Models\Order;
@@ -51,8 +52,12 @@ class OrderFulfillmentService
             ]);
 
             $this->clearPurchasedCartItems($order);
+            $order->load('items', 'entitlements.deck');
 
-            return $order->load('items', 'entitlements.deck');
+            // Listeners queue their jobs after commit, so a rollback sends nothing.
+            OrderPaid::dispatch($order);
+
+            return $order;
         });
     }
 

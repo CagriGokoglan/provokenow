@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'sku', 'name', 'slug', 'product_type', 'price_cents', 'sale_price_cents',
     'stock_quantity', 'is_active', 'description', 'metadata',
+    'meta_title', 'meta_description', 'canonical_url', 'og_image',
 ])]
 class Product extends Model
 {

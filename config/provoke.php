@@ -12,6 +12,53 @@ return [
         'password' => env('ADMIN_PASSWORD'),
     ],
 
+    'brand' => [
+        'name' => 'PROVOKE NOW',
+        'legal_name' => env('BRAND_LEGAL_NAME', 'PROVOKE NOW'),
+        'description' => 'Luxury intimacy and lifestyle brand creating conversation and connection card decks for couples.',
+        'logo_url' => env('BRAND_LOGO_URL', 'https://provokenow.com/brand/logo.png'),
+        // Official profiles; feeds Organization.sameAs so answer engines can resolve the entity.
+        'same_as' => array_values(array_filter(explode(',', (string) env('BRAND_SAME_AS', '')))),
+    ],
+
+    /*
+    | Public-facing site (Next.js). All canonical / sitemap URLs point here, not at the API host.
+    */
+    'frontend' => [
+        'url' => rtrim((string) env('FRONTEND_URL', 'https://provokenow.com'), '/'),
+        'paths' => [
+            'deck' => '/decks/{code}',
+            'product' => '/shop/{slug}',
+            'library_deck' => '/library/{code}',
+        ],
+    ],
+
+    'seo' => [
+        'default_og_image' => env('SEO_DEFAULT_OG_IMAGE', 'https://provokenow.com/og/default.jpg'),
+        'default_locale' => 'en',
+        'supported_locales' => ['en'],
+
+        // Indexable static pages: [path, changefreq, priority].
+        'static_pages' => [
+            ['/', 'daily', '1.0'],
+            ['/decks', 'daily', '0.9'],
+            ['/shop', 'daily', '0.9'],
+            ['/about', 'monthly', '0.5'],
+            ['/faq', 'monthly', '0.5'],
+        ],
+
+        // Never emitted in the sitemap, even if misconfigured above.
+        'sitemap_disallowed_prefixes' => ['/vault', '/checkout', '/cart', '/user', '/account', '/library', '/api', '/admin'],
+        'sitemap_cache_minutes' => 60,
+    ],
+
+    // Public, browser-safe identifiers only. Secrets live in config/services.php.
+    'tracking' => [
+        'meta_pixel_id' => env('META_PIXEL_ID'),
+        'gtm_container_id' => env('GTM_CONTAINER_ID'),
+        'google_site_verification' => env('GOOGLE_SITE_VERIFICATION'),
+    ],
+
     'commerce' => [
         'currency' => env('STORE_CURRENCY', 'USD'),
 

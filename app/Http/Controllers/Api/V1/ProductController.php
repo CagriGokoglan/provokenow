@@ -8,6 +8,8 @@ use App\Http\Resources\ProductResource;
 use App\Http\Resources\UpsellOfferResource;
 use App\Models\Product;
 use App\Services\Commerce\UpsellEngine;
+use App\Services\Seo\SchemaGeneratorService;
+use App\Services\Seo\SeoMetadataService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,13 +36,15 @@ class ProductController extends Controller
         return ApiResponse::paginated($products, ProductResource::class, 'Products retrieved.');
     }
 
-    public function show(string $slug, UpsellEngine $upsell): JsonResponse
+    public function show(string $slug, UpsellEngine $upsell, SeoMetadataService $seo, SchemaGeneratorService $schema): JsonResponse
     {
         $product = Product::active()->where('slug', $slug)->with('decks')->firstOrFail();
 
         return ApiResponse::success([
             'product' => new ProductResource($product),
             'recommendations' => UpsellOfferResource::collection($upsell->recommendationsFor($product)),
+            'seo' => $seo->forProduct($product),
+            'schema_json_ld' => $schema->forProduct($product),
         ], 'Product retrieved.');
     }
 }

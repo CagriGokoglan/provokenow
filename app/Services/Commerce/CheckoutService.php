@@ -9,6 +9,7 @@ use App\Models\Cart;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\Access\EntitlementService;
+use App\Support\Tracking\TrackingContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -24,7 +25,7 @@ class CheckoutService
      *
      * @param  array{email?: string, shipping_address?: array, billing_address?: array, payment_gateway?: string}  $input
      */
-    public function createPendingOrder(Cart $cart, ?User $user, array $input): Order
+    public function createPendingOrder(Cart $cart, ?User $user, array $input, ?TrackingContext $tracking = null): Order
     {
         if ($cart->items->isEmpty()) {
             throw new BusinessRuleException('Your cart is empty.', 422);
@@ -43,7 +44,7 @@ class CheckoutService
             throw ValidationException::withMessages(['email' => 'An email address is required for guest checkout.']);
         }
 
-        return DB::transaction(function () use ($cart, $user, $input, $priced, $email) {
+        return DB::transaction(function () use ($cart, $user, $input, $priced, $email, $tracking) {
             $order = Order::create([
                 'user_id' => $user?->getKey(),
                 'customer_email' => $email,
@@ -60,6 +61,8 @@ class CheckoutService
                 'metadata' => [
                     'cart_id' => $cart->getKey(),
                     'requires_shipping' => $priced['requires_shipping'],
+                    // Browser signals for the server-side Purchase event; only kept with consent.
+                    'tracking' => $tracking?->consent ? $tracking->toArray() : null,
                 ],
             ]);
 

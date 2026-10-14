@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable([
     'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords',
     'ai_system_role_prompt', 'pod_card_box_theme', 'digital_delivery_file_name', 'is_active',
+    'meta_title', 'meta_description', 'canonical_url', 'og_image', 'seo_faq',
 ])]
 #[Hidden(['ai_system_role_prompt'])]
 class Deck extends Model
@@ -28,6 +29,7 @@ class Deck extends Model
             'segment' => DeckSegment::class,
             'intensity_level' => 'integer',
             'is_active' => 'boolean',
+            'seo_faq' => 'array',
         ];
     }
 

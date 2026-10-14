@@ -14,6 +14,29 @@ return [
     |
     */
 
+    'brevo' => [
+        'key' => env('BREVO_API_KEY'),
+        'endpoint' => env('BREVO_ENDPOINT', 'https://api.brevo.com/v3/smtp/email'),
+        'sender' => [
+            'email' => env('BREVO_SENDER_EMAIL', 'orders@provokenow.com'),
+            'name' => env('BREVO_SENDER_NAME', 'PROVOKE NOW'),
+        ],
+        'reply_to' => env('BREVO_REPLY_TO', 'care@provokenow.com'),
+        // Optional Brevo template IDs. When empty, the built-in Blade templates are sent as htmlContent.
+        'templates' => [
+            'order_confirmation' => env('BREVO_TEMPLATE_ORDER_CONFIRMATION'),
+            'shipping_update' => env('BREVO_TEMPLATE_SHIPPING_UPDATE'),
+        ],
+    ],
+
+    'meta' => [
+        'pixel_id' => env('META_PIXEL_ID'),
+        'capi_access_token' => env('META_CAPI_ACCESS_TOKEN'),
+        'graph_version' => env('META_GRAPH_VERSION', 'v19.0'),
+        // Set while validating in Events Manager → Test Events; leave empty in production.
+        'test_event_code' => env('META_CAPI_TEST_EVENT_CODE'),
+    ],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

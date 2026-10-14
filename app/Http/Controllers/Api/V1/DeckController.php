@@ -8,6 +8,8 @@ use App\Http\Resources\CardResource;
 use App\Http\Resources\DeckResource;
 use App\Models\Deck;
 use App\Services\Access\VaultService;
+use App\Services\Seo\SchemaGeneratorService;
+use App\Services\Seo\SeoMetadataService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,8 +40,13 @@ class DeckController extends Controller
         return ApiResponse::paginated($decks, DeckResource::class, 'Decks retrieved.');
     }
 
-    public function show(Request $request, string $deckCode, VaultService $vault): JsonResponse
-    {
+    public function show(
+        Request $request,
+        string $deckCode,
+        VaultService $vault,
+        SeoMetadataService $seo,
+        SchemaGeneratorService $schema,
+    ): JsonResponse {
         $deck = Deck::active()->where('deck_code', strtoupper($deckCode))->firstOrFail();
         $user = $request->user('sanctum');
 
@@ -56,13 +63,19 @@ class DeckController extends Controller
             ->when($isLocked, fn ($q) => $q->where('card_number', 1))
             ->get();
 
+        $totalCards = $deck->cards()->count();
+        $products = $deck->products()->active()->with('decks:id')->get();
+
         return ApiResponse::success([
             'deck' => new DeckResource($deck),
             'is_locked' => $isLocked,
             'lock_reason' => $lockReason,
             'has_entitlement' => $entitled,
-            'total_cards' => $deck->cards()->count(),
+            'total_cards' => $totalCards,
             'cards' => CardResource::collection($cards),
+            'seo' => $seo->forDeck($deck),
+            // Built from the public preview card only, regardless of the viewer's access.
+            'schema_json_ld' => $schema->forDeck($deck, $cards->firstWhere('card_number', 1), $totalCards, $products),
         ], $isLocked ? 'Deck preview.' : 'Deck unlocked.');
     }
 }

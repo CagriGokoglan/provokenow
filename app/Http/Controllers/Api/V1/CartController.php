@@ -7,15 +7,19 @@ use App\Http\Requests\Cart\AddToCartRequest;
 use App\Http\Requests\Cart\ApplyUpsellRequest;
 use App\Http\Resources\CartResource;
 use App\Http\Resources\UpsellOfferResource;
+use App\Jobs\SendMetaConversionEvent;
 use App\Models\Cart;
 use App\Models\Product;
 use App\Services\Commerce\CartPricing;
 use App\Services\Commerce\CartResolver;
 use App\Services\Commerce\CartService;
 use App\Services\Commerce\UpsellEngine;
+use App\Services\Marketing\MetaCapiService;
 use App\Support\ApiResponse;
+use App\Support\Tracking\TrackingContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /** Works for guests (X-Cart-Token) and signed-in users (Bearer token). */
 class CartController extends Controller
@@ -25,6 +29,7 @@ class CartController extends Controller
         private readonly CartService $service,
         private readonly CartPricing $pricing,
         private readonly UpsellEngine $upsell,
+        private readonly MetaCapiService $meta,
     ) {}
 
     public function show(Request $request): JsonResponse
@@ -43,9 +48,19 @@ class CartController extends Controller
         $product = Product::findOrFail($request->validated('product_id'));
         $cart = $this->carts->resolve($request, create: true);
 
-        $this->service->add($cart, $product, (int) $request->validated('quantity', 1), $request->user('sanctum'));
+        $quantity = (int) $request->validated('quantity', 1);
+        $this->service->add($cart, $product, $quantity, $request->user('sanctum'));
 
-        return ApiResponse::success(['cart' => $this->present($cart->refresh())], 'Item added to cart.');
+        $eventId = 'atc.'.Str::uuid7();
+        $event = $this->meta->addToCartEvent($product, $quantity, $eventId, $request->user('sanctum'), TrackingContext::fromRequest($request));
+        if ($event) {
+            SendMetaConversionEvent::dispatch($event);
+        }
+
+        return ApiResponse::success([
+            'cart' => $this->present($cart->refresh()),
+            'tracking' => ['add_to_cart_event_id' => $eventId],
+        ], 'Item added to cart.');
     }
 
     public function applyUpsell(ApplyUpsellRequest $request): JsonResponse

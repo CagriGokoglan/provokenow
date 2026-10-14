@@ -4,7 +4,9 @@ namespace App\Models;
 
 use App\Enums\FulfillmentStatus;
 use App\Enums\PaymentStatus;
+use App\Observers\OrderObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +18,7 @@ use Illuminate\Support\Str;
     'tax_cents', 'shipping_cents', 'currency', 'payment_status', 'fulfillment_status',
     'shipping_address', 'billing_address', 'payment_gateway', 'transaction_id', 'paid_at', 'metadata',
 ])]
+#[ObservedBy(OrderObserver::class)]
 class Order extends Model
 {
     use HasUuids;

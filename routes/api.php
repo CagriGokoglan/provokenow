@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\DeckController;
 use App\Http\Controllers\Api\V1\OrderFulfillmentController;
 use App\Http\Controllers\Api\V1\ProductController;
+use App\Http\Controllers\Api\V1\PublicConfigController;
 use App\Http\Controllers\Api\V1\User\EntitlementController;
 use App\Http\Controllers\Api\V1\User\VaultController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::get('me', [AuthController::class, 'me'])->name('me');
         });
     });
+
+    Route::get('config/public', PublicConfigController::class)->name('config.public');
 
     // Catalogue (public)
     Route::get('decks', [DeckController::class, 'index'])->name('decks.index');
