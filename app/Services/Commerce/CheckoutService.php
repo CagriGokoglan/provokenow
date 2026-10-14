@@ -25,7 +25,7 @@ class CheckoutService
      *
      * @param  array{email?: string, shipping_address?: array, billing_address?: array, payment_gateway?: string}  $input
      */
-    public function createPendingOrder(Cart $cart, ?User $user, array $input, ?TrackingContext $tracking = null): Order
+    public function createPendingOrder(Cart $cart, ?User $user, array $input, ?TrackingContext $tracking = null, bool $gatewayCollectsDetails = false): Order
     {
         if ($cart->items->isEmpty()) {
             throw new BusinessRuleException('Your cart is empty.', 422);
@@ -35,12 +35,13 @@ class CheckoutService
 
         $priced = $this->pricing->price($cart);
 
-        if ($priced['requires_shipping'] && empty($input['shipping_address'])) {
+        // A hosted checkout (Stripe) collects email and shipping address itself; the webhook copies them back.
+        if (! $gatewayCollectsDetails && $priced['requires_shipping'] && empty($input['shipping_address'])) {
             throw ValidationException::withMessages(['shipping_address' => 'A shipping address is required for physical items.']);
         }
 
         $email = $user?->email ?? ($input['email'] ?? null);
-        if (! $email) {
+        if (! $email && ! $gatewayCollectsDetails) {
             throw ValidationException::withMessages(['email' => 'An email address is required for guest checkout.']);
         }
 
@@ -55,7 +56,7 @@ class CheckoutService
                 'total_cents' => $priced['total_cents'],
                 'currency' => $priced['currency'],
                 'payment_status' => PaymentStatus::Pending,
-                'shipping_address' => $priced['requires_shipping'] ? $input['shipping_address'] : null,
+                'shipping_address' => $priced['requires_shipping'] ? ($input['shipping_address'] ?? null) : null,
                 'billing_address' => $input['billing_address'] ?? null,
                 'payment_gateway' => $input['payment_gateway'] ?? null,
                 'metadata' => [

@@ -14,6 +14,15 @@ return [
     |
     */
 
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+        // Countries Stripe Checkout accepts shipping addresses for (ISO 3166-1 alpha-2).
+        'shipping_countries' => array_values(array_filter(explode(',', (string) env('STRIPE_SHIPPING_COUNTRIES', 'US')))),
+        // Unpaid sessions expire after this many minutes (Stripe minimum: 30); the order is then marked failed.
+        'session_ttl_minutes' => max(30, (int) env('STRIPE_SESSION_TTL_MINUTES', 30)),
+    ],
+
     'brevo' => [
         'key' => env('BREVO_API_KEY'),
         'endpoint' => env('BREVO_ENDPOINT', 'https://api.brevo.com/v3/smtp/email'),

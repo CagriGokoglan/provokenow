@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PublicConfigController;
 use App\Http\Controllers\Api\V1\User\EntitlementController;
 use App\Http\Controllers\Api\V1\User\VaultController;
+use App\Http\Controllers\Api\V1\Webhooks\StripeWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -44,6 +45,14 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::delete('items/{itemId}', [CartController::class, 'remove'])->whereUuid('itemId')->name('items.destroy');
     });
     Route::post('checkout/intent', [CheckoutController::class, 'intent'])->middleware('throttle:cart')->name('checkout.intent');
+    Route::post('checkout/session', [CheckoutController::class, 'session'])->middleware('throttle:cart')->name('checkout.session');
+    Route::get('checkout/status/{sessionId}', [CheckoutController::class, 'status'])
+        ->where('sessionId', 'cs_[A-Za-z0-9_]{10,255}')
+        ->middleware('throttle:cart')
+        ->name('checkout.status');
+
+    // Payment provider webhooks (signature-verified, no auth / throttle).
+    Route::post('webhooks/stripe', StripeWebhookController::class)->name('webhooks.stripe');
 
     // Account
     Route::middleware('auth:sanctum')->prefix('user')->name('user.')->group(function () {

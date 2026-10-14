@@ -2,6 +2,7 @@
 
 namespace App\Services\Commerce;
 
+use App\Enums\EntitlementStatus;
 use App\Enums\FulfillmentStatus;
 use App\Enums\PaymentStatus;
 use App\Events\OrderPaid;
@@ -56,6 +57,50 @@ class OrderFulfillmentService
 
             // Listeners queue their jobs after commit, so a rollback sends nothing.
             OrderPaid::dispatch($order);
+
+            return $order;
+        });
+    }
+
+    /** Payment did not complete (session expired, async payment failed). Only affects pending orders. */
+    public function markFailed(Order $order, string $reason): Order
+    {
+        return DB::transaction(function () use ($order, $reason) {
+            /** @var Order $order */
+            $order = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($order->payment_status === PaymentStatus::Pending) {
+                $order->update([
+                    'payment_status' => PaymentStatus::Failed,
+                    'metadata' => [...($order->metadata ?? []), 'failure_reason' => $reason],
+                ]);
+            }
+
+            return $order;
+        });
+    }
+
+    /**
+     * Records a refund from the provider. A full refund revokes the deck access this order granted
+     * (revoked rows stay as history); partial refunds are only recorded.
+     */
+    public function recordRefund(Order $order, int $refundedCents, bool $full): Order
+    {
+        return DB::transaction(function () use ($order, $refundedCents, $full) {
+            /** @var Order $order */
+            $order = Order::whereKey($order->getKey())->lockForUpdate()->firstOrFail();
+            $metadata = [...($order->metadata ?? []), 'refunded_cents' => $refundedCents];
+
+            if (! $full) {
+                $order->update(['metadata' => $metadata]);
+
+                return $order;
+            }
+
+            $order->update(['payment_status' => PaymentStatus::Refunded, 'metadata' => $metadata]);
+            $order->entitlements()
+                ->where('status', EntitlementStatus::Active->value)
+                ->update(['status' => EntitlementStatus::Revoked->value, 'updated_at' => now()]);
 
             return $order;
         });

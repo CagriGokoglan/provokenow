@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Contracts\PaymentGateway;
+use App\Services\Payments\StripeGateway;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -15,7 +17,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Swap the implementation here to change payment provider.
+        $this->app->bind(PaymentGateway::class, StripeGateway::class);
     }
 
     /**
