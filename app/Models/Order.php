@@ -12,9 +12,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 #[Fillable([
-    'order_number', 'user_id', 'customer_email', 'total_cents', 'tax_cents', 'shipping_cents',
-    'payment_status', 'fulfillment_status', 'shipping_address', 'billing_address',
-    'payment_gateway', 'transaction_id',
+    'order_number', 'user_id', 'customer_email', 'subtotal_cents', 'discount_cents', 'total_cents',
+    'tax_cents', 'shipping_cents', 'currency', 'payment_status', 'fulfillment_status',
+    'shipping_address', 'billing_address', 'payment_gateway', 'transaction_id', 'paid_at', 'metadata',
 ])]
 class Order extends Model
 {
@@ -43,6 +43,8 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'subtotal_cents' => 'integer',
+            'discount_cents' => 'integer',
             'total_cents' => 'integer',
             'tax_cents' => 'integer',
             'shipping_cents' => 'integer',
@@ -50,6 +52,8 @@ class Order extends Model
             'fulfillment_status' => FulfillmentStatus::class,
             'shipping_address' => 'array',
             'billing_address' => 'array',
+            'paid_at' => 'datetime',
+            'metadata' => 'array',
         ];
     }
 
@@ -66,6 +70,11 @@ class Order extends Model
     public function entitlements(): HasMany
     {
         return $this->hasMany(UserEntitlement::class);
+    }
+
+    public function isPaid(): bool
+    {
+        return $this->payment_status === PaymentStatus::Paid;
     }
 
     public function isGuest(): bool

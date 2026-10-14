@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Product extends Model
 {
-    use HasUuids;
+    use HasFactory, HasUuids;
 
     public const UNLIMITED_STOCK = -1;
 
@@ -57,6 +58,40 @@ class Product extends Model
     public function hasUnlimitedStock(): bool
     {
         return $this->stock_quantity === self::UNLIMITED_STOCK;
+    }
+
+    public function hasStockFor(int $quantity): bool
+    {
+        return $this->hasUnlimitedStock() || $this->stock_quantity >= $quantity;
+    }
+
+    public function isPurchasable(): bool
+    {
+        return $this->is_active && $this->hasStockFor(1);
+    }
+
+    public function requiresShipping(): bool
+    {
+        return (bool) ($this->metadata['requires_shipping'] ?? $this->product_type->shipsByDefault());
+    }
+
+    /** @return list<string> */
+    public function images(): array
+    {
+        return array_values((array) ($this->metadata['images'] ?? []));
+    }
+
+    /**
+     * Accessory targeting for the upsell engine, stored in metadata.upsell:
+     *   { "segments": ["Medium_Spice"], "deck_codes": ["DECK-007"], "all_digital_decks": false }
+     */
+    public function upsellTargetsDeck(Deck $deck): bool
+    {
+        $rules = (array) ($this->metadata['upsell'] ?? []);
+
+        return ($rules['all_digital_decks'] ?? false) === true
+            || in_array($deck->segment->value, (array) ($rules['segments'] ?? []), true)
+            || in_array($deck->deck_code, (array) ($rules['deck_codes'] ?? []), true);
     }
 
     #[Scope]

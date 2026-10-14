@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -17,6 +18,22 @@ final class ApiResponse
             'data' => $data,
             'message' => $message,
         ], $status);
+    }
+
+    /**
+     * @param  LengthAwarePaginator<int, mixed>  $paginator
+     */
+    public static function paginated(LengthAwarePaginator $paginator, string $resourceClass, string $message = 'OK'): JsonResponse
+    {
+        return self::success([
+            'items' => $resourceClass::collection($paginator->getCollection()),
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'total' => $paginator->total(),
+                'last_page' => $paginator->lastPage(),
+            ],
+        ], $message);
     }
 
     public static function error(string $message, int $status = 400, mixed $errors = null): JsonResponse

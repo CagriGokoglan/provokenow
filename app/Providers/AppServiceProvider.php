@@ -32,5 +32,12 @@ class AppServiceProvider extends ServiceProvider
                 Limit::perMinute(5)->by('auth-email:'.mb_strtolower((string) $request->input('email'))),
             ];
         });
+
+        // Passcodes are short; keep brute force impractical.
+        RateLimiter::for('vault', fn (Request $request) => Limit::perMinute(5)->by('vault:'.$request->user()?->getKey()));
+
+        RateLimiter::for('cart', fn (Request $request) => Limit::perMinute(60)->by(
+            'cart:'.($request->user('sanctum')?->getKey() ?? $request->ip())
+        ));
     }
 }

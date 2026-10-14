@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Hidden(['ai_system_role_prompt'])]
 class Deck extends Model
 {
-    use HasUuids;
+    use HasFactory, HasUuids;
 
     protected function casts(): array
     {
@@ -43,6 +44,18 @@ class Deck extends Model
     public function entitlements(): HasMany
     {
         return $this->hasMany(UserEntitlement::class);
+    }
+
+    /** Cards hidden behind the vault for users who have set a vault passcode. */
+    public function isVaultProtected(): bool
+    {
+        return in_array($this->segment->value, config('provoke.vault.protected_segments', []), true);
+    }
+
+    /** @return list<string> */
+    public function themeKeywords(): array
+    {
+        return array_values(array_filter(array_map('trim', explode(',', (string) $this->core_theme_keywords))));
     }
 
     #[Scope]

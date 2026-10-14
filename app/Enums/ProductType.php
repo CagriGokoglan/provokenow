@@ -14,4 +14,10 @@ enum ProductType: string
     {
         return array_column(self::cases(), 'value');
     }
+
+    /** Whether this type ships by default (a bundle may override via metadata.requires_shipping). */
+    public function shipsByDefault(): bool
+    {
+        return $this !== self::DigitalDeck;
+    }
 }
