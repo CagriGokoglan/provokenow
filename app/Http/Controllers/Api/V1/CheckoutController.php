@@ -6,6 +6,7 @@ use App\Contracts\PaymentGateway;
 use App\Exceptions\BusinessRuleException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Checkout\CheckoutIntentRequest;
+use App\Http\Requests\Checkout\TestCheckoutPaymentRequest;
 use App\Http\Resources\OrderResource;
 use App\Jobs\SendMetaConversionEvent;
 use App\Models\Order;
@@ -13,10 +14,13 @@ use App\Services\Commerce\CartResolver;
 use App\Services\Commerce\CheckoutService;
 use App\Services\Commerce\OrderFulfillmentService;
 use App\Services\Marketing\MetaCapiService;
+use App\Services\Payments\TestPaymentGateway;
 use App\Support\ApiResponse;
 use App\Support\Tracking\TrackingContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class CheckoutController extends Controller
@@ -73,7 +77,11 @@ class CheckoutController extends Controller
             return ApiResponse::error('We could not start the secure checkout. Please try again.', 502);
         }
 
-        $order->update(['metadata' => [...($order->metadata ?? []), "{$gateway->name()}_session_id" => $redirect->reference]]);
+        $order->update(['metadata' => [
+            ...($order->metadata ?? []),
+            'checkout_session_id' => $redirect->reference,
+            "{$gateway->name()}_session_id" => $redirect->reference,
+        ]]);
 
         if ($event = $meta->initiateCheckoutEvent($order, $tracking)) {
             SendMetaConversionEvent::dispatch($event);
@@ -95,8 +103,7 @@ class CheckoutController extends Controller
      */
     public function status(string $sessionId): JsonResponse
     {
-        $order = Order::where('metadata->stripe_session_id', $sessionId)->with('items', 'entitlements.deck')->first()
-            ?? throw new BusinessRuleException('Order not found.', 404);
+        $order = $this->orderForSession($sessionId)->load('items', 'entitlements.deck');
 
         return ApiResponse::success([
             'order' => [
@@ -117,8 +124,69 @@ class CheckoutController extends Controller
                     'title' => $e->deck->title,
                 ])->values(),
                 'requires_shipping' => (bool) ($order->metadata['requires_shipping'] ?? false),
+                'payment_gateway' => $order->payment_gateway,
+                // TEST MODE page: what it must collect (Stripe collects these on its own page).
+                'needs_email' => $order->customer_email === null,
+                'needs_shipping_address' => (bool) ($order->metadata['requires_shipping'] ?? false) && empty($order->shipping_address),
             ],
             'tracking' => ['purchase_event_id' => "purchase.{$order->id}"],
         ], 'Order status.');
+    }
+
+    /**
+     * TEST MODE only: simulates a successful payment for an order created by TestPaymentGateway.
+     * Runs the same fulfilment as the Stripe webhook (entitlements, stock, email, Meta CAPI).
+     */
+    public function testPay(TestCheckoutPaymentRequest $request, string $sessionId, OrderFulfillmentService $fulfillment): JsonResponse
+    {
+        $order = $this->testOrder($sessionId);
+
+        if (! $order->isPaid()) {
+            $details = $request->validated();
+            $order->update(array_filter([
+                'customer_email' => $order->customer_email ?? ($details['email'] ?? null),
+                'shipping_address' => $order->shipping_address ?? ($details['shipping_address'] ?? null),
+            ]));
+
+            if ($order->customer_email === null) {
+                throw ValidationException::withMessages(['email' => 'An email address is required.']);
+            }
+            if (($order->metadata['requires_shipping'] ?? false) && empty($order->shipping_address)) {
+                throw ValidationException::withMessages(['shipping_address' => 'A shipping address is required for physical items.']);
+            }
+
+            $fulfillment->markPaid($order, 'test', 'test_'.Str::lower(Str::random(24)));
+        }
+
+        return ApiResponse::success(['session_id' => $sessionId], 'Test payment completed.');
+    }
+
+    /** TEST MODE only: the customer cancelled on the test payment page. */
+    public function testCancel(string $sessionId, OrderFulfillmentService $fulfillment): JsonResponse
+    {
+        $fulfillment->markFailed($this->testOrder($sessionId), 'test_cancelled');
+
+        return ApiResponse::success(null, 'Test payment cancelled.');
+    }
+
+    private function orderForSession(string $sessionId): Order
+    {
+        return Order::where('metadata->checkout_session_id', $sessionId)->first()
+            ?? throw new BusinessRuleException('Order not found.', 404);
+    }
+
+    private function testOrder(string $sessionId): Order
+    {
+        // 404 (not 403) so production never reveals that this endpoint exists.
+        if (! TestPaymentGateway::allowed()) {
+            throw new BusinessRuleException('Not found.', 404);
+        }
+
+        $order = $this->orderForSession($sessionId);
+        if ($order->payment_gateway !== 'test') {
+            throw new BusinessRuleException('Order not found.', 404);
+        }
+
+        return $order;
     }
 }

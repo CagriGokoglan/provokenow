@@ -299,7 +299,7 @@ class StripeCheckoutTest extends TestCase
 
     public function test_checkout_is_unavailable_until_stripe_is_configured(): void
     {
-        config(['services.stripe.secret' => null]);
+        config(['services.stripe.secret' => null, 'provoke.enable_test_fulfillment' => false]);
         Sanctum::actingAs(User::factory()->create());
         $this->postJson('/api/v1/cart/add', ['product_id' => $this->digital->id]);
 

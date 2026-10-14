@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Contracts\PaymentGateway;
 use App\Services\Payments\StripeGateway;
+use App\Services\Payments\TestPaymentGateway;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -17,8 +18,15 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Swap the implementation here to change payment provider.
-        $this->app->bind(PaymentGateway::class, StripeGateway::class);
+        // Stripe whenever it has keys. Without keys, non-production environments with
+        // ENABLE_TEST_FULFILLMENT=true get the TEST MODE gateway for internal flow testing.
+        $this->app->bind(PaymentGateway::class, function ($app) {
+            $stripe = $app->make(StripeGateway::class);
+
+            return ! $stripe->isConfigured() && TestPaymentGateway::allowed()
+                ? $app->make(TestPaymentGateway::class)
+                : $stripe;
+        });
     }
 
     /**

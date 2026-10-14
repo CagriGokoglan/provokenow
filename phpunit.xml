@@ -27,6 +27,11 @@
         <env name="DB_DATABASE" value="provokenow_test"/>
         <env name="DB_URL" value=""/>
         <env name="ENABLE_TEST_FULFILLMENT" value="true"/>
+        <env name="FRONTEND_URL" value="https://provokenow.com"/>
+        <env name="STRIPE_SECRET_KEY" value=""/>
+        <env name="STRIPE_WEBHOOK_SECRET" value=""/>
+        <env name="BREVO_API_KEY" value=""/>
+        <env name="META_CAPI_ACCESS_TOKEN" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

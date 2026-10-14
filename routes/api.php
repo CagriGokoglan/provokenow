@@ -51,6 +51,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
         ->middleware('throttle:cart')
         ->name('checkout.status');
 
+    // TEST MODE payment page actions (404 unless TestPaymentGateway::allowed()).
+    Route::prefix('checkout/test/{sessionId}')->where(['sessionId' => 'cs_test_[A-Za-z0-9_]{10,255}'])->middleware('throttle:cart')->group(function () {
+        Route::post('pay', [CheckoutController::class, 'testPay'])->name('checkout.test.pay');
+        Route::post('cancel', [CheckoutController::class, 'testCancel'])->name('checkout.test.cancel');
+    });
+
     // Payment provider webhooks (signature-verified, no auth / throttle).
     Route::post('webhooks/stripe', StripeWebhookController::class)->name('webhooks.stripe');
 
@@ -61,8 +67,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::post('vault/verify', [VaultController::class, 'verify'])->middleware('throttle:vault')->name('vault.verify');
     });
 
-    // Simulated payment webhook — test environments only.
-    if (config('provoke.enable_test_fulfillment')) {
+    // Simulated payment webhook — test environments only, never in production.
+    if (config('provoke.enable_test_fulfillment') && ! app()->isProduction()) {
         Route::post('orders/fulfill-test', [OrderFulfillmentController::class, 'fulfillTest'])
             ->middleware(['auth:sanctum', 'staff'])
             ->name('orders.fulfill-test');
