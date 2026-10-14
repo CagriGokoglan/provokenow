@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\Deck;
+use App\Support\MediaUrl;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -25,6 +26,8 @@ class DeckResource extends JsonResource
             'core_theme_keywords' => $this->themeKeywords(),
             'pod_card_box_theme' => $this->pod_card_box_theme,
             'vault_protected' => $this->isVaultProtected(),
+            'card_front_bg_url' => MediaUrl::resolve($this->card_front_bg_url),
+            'card_back_bg_url' => MediaUrl::resolve($this->card_back_bg_url),
         ];
     }
 }

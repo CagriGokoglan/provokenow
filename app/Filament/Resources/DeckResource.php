@@ -7,6 +7,7 @@ use App\Filament\Resources\DeckResource\Pages;
 use App\Filament\Resources\DeckResource\RelationManagers\CardsRelationManager;
 use App\Filament\Support\Fields;
 use App\Models\Deck;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -59,6 +60,18 @@ class DeckResource extends Resource
                     Toggle::make('is_active')
                         ->label('Active (visible in the catalogue)')
                         ->default(false),
+                ]),
+                Tab::make('Card Artwork')->icon('heroicon-o-paint-brush')->columns(2)->schema([
+                    FileUpload::make('card_front_bg_url')
+                        ->label('Card front background')
+                        ->helperText('Behind the card text in the web app. SVG (sanitised), WebP or PNG; 5:7 portrait.')
+                        ->acceptedFileTypes(['image/svg+xml', 'image/webp', 'image/png', 'image/jpeg'])
+                        ->disk('public')->directory('decks/artwork')->visibility('public')->maxSize(2048),
+                    FileUpload::make('card_back_bg_url')
+                        ->label('Card back')
+                        ->helperText('Shown before a card is revealed, and on locked cards.')
+                        ->acceptedFileTypes(['image/svg+xml', 'image/webp', 'image/png', 'image/jpeg'])
+                        ->disk('public')->directory('decks/artwork')->visibility('public')->maxSize(2048),
                 ]),
                 Tab::make('AI & Production')->icon('heroicon-o-cpu-chip')->schema([
                     Textarea::make('ai_system_role_prompt')

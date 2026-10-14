@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\DeckSegment;
 use App\Support\MediaUrl;
+use App\Support\SvgSanitizer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords',
     'ai_system_role_prompt', 'pod_card_box_theme', 'digital_delivery_file_name', 'is_active',
     'meta_title', 'meta_description', 'canonical_url', 'og_image', 'seo_faq',
+    'card_front_bg_url', 'card_back_bg_url',
 ])]
 #[Hidden(['ai_system_role_prompt'])]
 class Deck extends Model
@@ -53,6 +55,17 @@ class Deck extends Model
     public function isVaultProtected(): bool
     {
         return in_array($this->segment->value, config('provoke.vault.protected_segments', []), true);
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Deck $deck) {
+            foreach (['card_front_bg_url', 'card_back_bg_url'] as $field) {
+                if ($deck->isDirty($field)) {
+                    SvgSanitizer::sanitizeStored($deck->{$field}, $field);
+                }
+            }
+        });
     }
 
     public function ogImageUrl(): ?string
