@@ -88,6 +88,7 @@ class DeckAccessTest extends TestCase
         $this->assertStringNotContainsString('content', $response->getContent());
         $this->getJson('/api/v1/decks?segment=Advanced_Taboo')->assertJsonPath('data.pagination.total', 1);
         $this->getJson('/api/v1/decks/DECK-002')->assertNotFound()->assertJsonPath('success', false);
+        $this->getJson('/api/v1/products/missing')->assertNotFound()->assertJsonPath('message', 'Resource not found.');
     }
 
     public function test_vault_passcode_gates_protected_decks_until_verified(): void

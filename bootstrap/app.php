@@ -40,7 +40,9 @@ return Application::configure(basePath: dirname(__DIR__))
                 $e instanceof ValidationException => ApiResponse::error($e->getMessage(), 422, $e->errors()),
                 $e instanceof AuthenticationException => ApiResponse::error('Unauthenticated.', 401),
                 $e instanceof AuthorizationException => ApiResponse::error($e->getMessage() ?: 'Forbidden.', 403),
-                $e instanceof ModelNotFoundException => ApiResponse::error('Resource not found.', 404),
+                // Laravel wraps ModelNotFoundException in a NotFoundHttpException; never leak model class names.
+                $e instanceof ModelNotFoundException,
+                $e->getPrevious() instanceof ModelNotFoundException => ApiResponse::error('Resource not found.', 404),
                 $e instanceof HttpExceptionInterface => ApiResponse::error(
                     $e->getMessage() ?: (Response::$statusTexts[$e->getStatusCode()] ?? 'Error'),
                     $e->getStatusCode(),
