@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\LoginRequest;
+use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Resources\UserResource;
+use App\Models\User;
+use App\Support\ApiResponse;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+
+class AuthController extends Controller
+{
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $user = DB::transaction(function () use ($request) {
+            // Role is never taken from input: self-registration is always a customer.
+            $user = User::create($request->only('name', 'email', 'password'));
+
+            $user->profile()->create([
+                'preferred_language' => $request->input('preferred_language', 'en'),
+                'marketing_opt_in' => $request->boolean('marketing_opt_in'),
+            ]);
+
+            return $user;
+        });
+
+        return ApiResponse::success(
+            $this->tokenPayload($user, $request->input('device_name')),
+            'Registration successful.',
+            201,
+        );
+    }
+
+    public function login(LoginRequest $request): JsonResponse
+    {
+        $user = User::where('email', $request->input('email'))->first();
+
+        if (! $user || ! Hash::check($request->input('password'), $user->password)) {
+            return ApiResponse::error('The provided credentials are incorrect.', 401);
+        }
+
+        return ApiResponse::success(
+            $this->tokenPayload($user, $request->input('device_name')),
+            'Login successful.',
+        );
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return ApiResponse::success(null, 'Logged out.');
+    }
+
+    public function me(Request $request): JsonResponse
+    {
+        return ApiResponse::success(
+            ['user' => new UserResource($request->user()->load('profile'))],
+            'Authenticated user.',
+        );
+    }
+
+    /** @return array{user: UserResource, token: string, token_type: string} */
+    private function tokenPayload(User $user, ?string $deviceName): array
+    {
+        $token = $user->createToken($deviceName ?: 'api')->plainTextToken;
+
+        return [
+            'user' => new UserResource($user->load('profile')),
+            'token' => $token,
+            'token_type' => 'Bearer',
+        ];
+    }
+}
