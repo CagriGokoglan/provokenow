@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['preferred_language', 'marketing_opt_in'])]
+// The site is English-only: preferred_language keeps its 'en' default and is not editable.
+#[Fillable(['marketing_opt_in'])]
 #[Hidden(['digital_vault_passcode_hash'])]
 class UserProfile extends Model
 {

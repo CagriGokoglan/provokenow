@@ -22,7 +22,6 @@ class AuthController extends Controller
             $user = User::create($request->only('name', 'email', 'password'));
 
             $user->profile()->create([
-                'preferred_language' => $request->input('preferred_language', 'en'),
                 'marketing_opt_in' => $request->boolean('marketing_opt_in'),
             ]);
 

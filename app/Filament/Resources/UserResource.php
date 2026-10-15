@@ -54,7 +54,6 @@ class UserResource extends Resource
             ]),
             Group::make()->columnSpan(1)->schema([
                 Section::make('Profile')->relationship('profile')->schema([
-                    TextInput::make('preferred_language')->maxLength(10)->default('en'),
                     Toggle::make('marketing_opt_in')->label('Marketing opt-in'),
                 ]),
                 Section::make('Activity')->hiddenOn('create')->schema([

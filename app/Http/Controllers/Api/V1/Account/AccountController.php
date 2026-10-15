@@ -18,7 +18,6 @@ class AccountController extends Controller
     {
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
-            'preferred_language' => ['sometimes', 'string', 'max:10'],
             'marketing_opt_in' => ['sometimes', 'boolean'],
         ]);
 
@@ -27,7 +26,7 @@ class AccountController extends Controller
             $user->update(['name' => $data['name']]);
         }
 
-        $profile = collect($data)->only(['preferred_language', 'marketing_opt_in'])->all();
+        $profile = collect($data)->only(['marketing_opt_in'])->all();
         if ($profile !== []) {
             $user->profile()->updateOrCreate([], $profile);
         }

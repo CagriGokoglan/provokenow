@@ -19,7 +19,6 @@ class UserResource extends JsonResource
             'email_verified_at' => $this->email_verified_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),
             'profile' => $this->whenLoaded('profile', fn () => [
-                'preferred_language' => $this->profile?->preferred_language,
                 'marketing_opt_in' => (bool) $this->profile?->marketing_opt_in,
                 'has_vault_passcode' => (bool) $this->profile?->hasVaultPasscode(),
             ]),
