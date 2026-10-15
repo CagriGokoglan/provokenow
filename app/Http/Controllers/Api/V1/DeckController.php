@@ -13,6 +13,7 @@ use App\Services\Seo\SeoMetadataService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class DeckController extends Controller
@@ -20,6 +21,8 @@ class DeckController extends Controller
     public const LOCK_NOT_ENTITLED = 'not_entitled';
 
     public const LOCK_VAULT = 'vault_locked';
+
+    public const SORTS = ['featured', 'bestsellers', 'newest', 'price_asc', 'price_desc'];
 
     public function index(Request $request): JsonResponse
     {
@@ -29,6 +32,7 @@ class DeckController extends Controller
             'level' => ['sometimes', 'string', Rule::in(array_map(fn (DeckSegment $s) => $s->slug(), DeckSegment::cases()))],
             'category' => ['sometimes', 'string', 'max:80'],
             'intensity_level' => ['sometimes', 'integer', 'between:1,4'],
+            'sort' => ['sometimes', Rule::in(self::SORTS)],
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
         ]);
 
@@ -40,7 +44,26 @@ class DeckController extends Controller
             ->when($filters['level'] ?? null, fn ($q, $level) => $q->where('segment', DeckSegment::fromSlug($level)->value))
             ->when($filters['category'] ?? null, fn ($q, $slug) => $q->whereHas('categories', fn ($c) => $c->where('slug', $slug)->where('is_active', true)))
             ->when($filters['intensity_level'] ?? null, fn ($q, $level) => $q->where('intensity_level', $level))
-            ->orderBy('deck_code')
+            ->addSelect([
+                // Lowest price of an active product that unlocks this deck ("From $19").
+                'from_price_cents' => DB::table('products')
+                    ->join('product_deck_claims', 'product_deck_claims.product_id', '=', 'products.id')
+                    ->whereColumn('product_deck_claims.deck_id', 'decks.id')
+                    ->where('products.is_active', true)
+                    ->selectRaw('MIN(COALESCE(products.sale_price_cents, products.price_cents))'),
+                // Copies sold: access granted through paid orders.
+                'sales_count' => DB::table('user_entitlements')
+                    ->whereColumn('user_entitlements.deck_id', 'decks.id')
+                    ->whereNotNull('order_id')
+                    ->selectRaw('COUNT(*)'),
+            ])
+            ->tap(fn ($q) => match ($filters['sort'] ?? 'featured') {
+                'bestsellers' => $q->orderByDesc('sales_count')->orderBy('deck_code'),
+                'newest' => $q->orderByDesc('decks.created_at')->orderBy('deck_code'),
+                'price_asc' => $q->orderByRaw('from_price_cents ASC NULLS LAST')->orderBy('deck_code'),
+                'price_desc' => $q->orderByRaw('from_price_cents DESC NULLS LAST')->orderBy('deck_code'),
+                default => $q->orderBy('deck_code'),
+            })
             ->paginate($filters['per_page'] ?? 50);
 
         return ApiResponse::paginated($decks, DeckResource::class, 'Decks retrieved.');

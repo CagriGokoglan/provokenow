@@ -28,6 +28,8 @@ class DeckResource extends JsonResource
             'core_theme_keywords' => $this->themeKeywords(),
             'pod_card_box_theme' => $this->pod_card_box_theme,
             'vault_protected' => $this->isVaultProtected(),
+            // Only present on the catalogue listing (computed there).
+            'from_price_cents' => $this->when(array_key_exists('from_price_cents', $this->resource->getAttributes()), fn () => $this->resource->getAttributes()['from_price_cents'] === null ? null : (int) $this->resource->getAttributes()['from_price_cents']),
             'card_front_bg_url' => MediaUrl::resolve($this->card_front_bg_url),
             'card_back_bg_url' => MediaUrl::resolve($this->card_back_bg_url),
         ];

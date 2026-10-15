@@ -143,7 +143,9 @@ class DemoCatalogSeeder extends Seeder
         $cats = ProductCategory::pluck('id', 'slug');
         Product::where('slug', 'silk-blindfold')->update(['product_category_id' => $cats['bdsm-tools-costumes'], 'is_featured' => true, 'is_new_arrival' => true]);
         Product::where('slug', 'massage-candle')->update(['product_category_id' => $cats['sex-toys'], 'is_featured' => true]);
-        Product::where('slug', 'like', 'box-%')->update(['is_boxed_game' => true, 'is_featured' => true]);
+        Product::where('slug', 'like', 'box-%')->update(['is_boxed_game' => true, 'is_featured' => true, 'product_category_id' => $cats['printed-game-boxes']]);
+        Product::where('slug', 'like', 'dig-%')->orWhere('slug', 'first-sparks-trilogy')->update(['product_category_id' => $cats['card-games']]);
+        ProductCategory::whereIn('slug', ['card-games', 'printed-game-boxes', 'lingerie-underwear', 'bdsm-tools-costumes'])->update(['show_in_footer' => true]);
         foreach ([['velvet-dice', 'Velvet Dice', 'dice', 1800], ['lace-bodysuit', 'Lace Bodysuit', 'lingerie-underwear', 8900], ['patent-stilettos', 'Patent Stilettos', 'heels', 14500], ['satin-robe', 'Satin Robe', 'apparel-outerwear', 11000]] as [$slug, $name, $cat, $price]) {
             $p = $this->product($slug, $name, ProductType::PhysicalAccessory, $price, "Sample {$name} for local development.", 20);
             $p->update(['product_category_id' => $cats[$cat], 'is_new_arrival' => true]);

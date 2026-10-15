@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProductCategory;
 use App\Models\SiteSetting;
 use App\Services\Seo\SchemaGeneratorService;
 use App\Support\ApiResponse;
@@ -32,6 +33,7 @@ class PublicConfigController extends Controller
             ],
             'socials' => array_filter((array) SiteSetting::value('socials', []), fn ($url) => is_string($url) && str_starts_with($url, 'https://')),
             'brand_story' => SiteSetting::value('brand_story'),
+            'footer_categories' => ProductCategory::active()->where('show_in_footer', true)->get(['name', 'slug']),
             // Site-wide Organization entity for the frontend's root layout.
             'organization_schema_json_ld' => $schema->graph([$schema->organization()]),
         ], 'Public configuration.')->header('Cache-Control', 'public, max-age=300');

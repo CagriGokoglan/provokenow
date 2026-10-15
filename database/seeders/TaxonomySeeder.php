@@ -12,8 +12,10 @@ use Illuminate\Database\Seeder;
  */
 class TaxonomySeeder extends Seeder
 {
-    /** Store departments. "Printed Game Boxes" is the is_boxed_game flag, not a category. */
+    /** Store departments (all editable in the admin panel). */
     public const PRODUCT_CATEGORIES = [
+        'card-games' => 'Card Games',
+        'printed-game-boxes' => 'Printed Game Boxes',
         'dice' => 'Dice',
         'lingerie-underwear' => 'Lingerie & Underwear',
         'apparel-outerwear' => 'Apparel & Outerwear',
@@ -33,7 +35,7 @@ class TaxonomySeeder extends Seeder
     public function run(): void
     {
         foreach (array_keys(self::PRODUCT_CATEGORIES) as $i => $slug) {
-            ProductCategory::firstOrCreate(['slug' => $slug], ['name' => self::PRODUCT_CATEGORIES[$slug], 'sort_order' => ($i + 1) * 10]);
+            ProductCategory::firstOrCreate(['slug' => $slug], ['name' => self::PRODUCT_CATEGORIES[$slug], 'sort_order' => $i + 1]);
         }
 
         foreach (array_keys(self::DECK_CATEGORIES) as $i => $slug) {

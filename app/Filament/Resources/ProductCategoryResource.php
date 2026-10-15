@@ -12,6 +12,8 @@ class ProductCategoryResource extends TaxonomyResource
 
     protected static string $countRelation = 'products';
 
+    protected static bool $footerToggle = true;
+
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
     protected static ?string $navigationGroup = 'Catalog';

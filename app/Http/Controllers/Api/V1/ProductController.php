@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\PaymentStatus;
 use App\Enums\ProductType;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductResource;
@@ -13,6 +14,7 @@ use App\Services\Seo\SeoMetadataService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
@@ -28,6 +30,7 @@ class ProductController extends Controller
             'boxed' => ['sometimes', 'boolean'],
             'featured' => ['sometimes', 'boolean'],
             'new_arrival' => ['sometimes', 'boolean'],
+            'sort' => ['sometimes', Rule::in(['featured', 'bestsellers', 'newest', 'price_asc', 'price_desc'])],
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
         ]);
 
@@ -43,8 +46,22 @@ class ProductController extends Controller
             ->when($request->boolean('boxed'), fn ($q) => $q->where('is_boxed_game', true))
             ->when($request->boolean('featured'), fn ($q) => $q->where('is_featured', true))
             ->when($request->boolean('new_arrival'), fn ($q) => $q->where('is_new_arrival', true))
-            ->orderBy('sort_order')
-            ->when($request->boolean('new_arrival'), fn ($q) => $q->latest(), fn ($q) => $q->orderBy('name'))
+            ->addSelect([
+                'products.*',
+                // Units sold on paid orders.
+                'sold_count' => DB::table('order_items')
+                    ->join('orders', 'orders.id', '=', 'order_items.order_id')
+                    ->whereColumn('order_items.product_id', 'products.id')
+                    ->where('orders.payment_status', PaymentStatus::Paid->value)
+                    ->selectRaw('COALESCE(SUM(order_items.quantity), 0)'),
+            ])
+            ->tap(fn ($q) => match ($filters['sort'] ?? ($request->boolean('new_arrival') ? 'newest' : 'featured')) {
+                'bestsellers' => $q->orderByDesc('sold_count')->orderBy('name'),
+                'newest' => $q->latest()->orderBy('name'),
+                'price_asc' => $q->orderByRaw('COALESCE(sale_price_cents, price_cents) ASC')->orderBy('name'),
+                'price_desc' => $q->orderByRaw('COALESCE(sale_price_cents, price_cents) DESC')->orderBy('name'),
+                default => $q->orderBy('sort_order')->orderBy('name'),
+            })
             ->paginate($filters['per_page'] ?? 24);
 
         return ApiResponse::paginated($products, ProductResource::class, 'Products retrieved.');

@@ -17,6 +17,9 @@ abstract class TaxonomyResource extends Resource
     /** Relationship counted in the table ("decks" / "products"). */
     protected static string $countRelation;
 
+    /** Store categories can be listed in the footer's Explore column. */
+    protected static bool $footerToggle = false;
+
     public static function form(Form $form): Form
     {
         return $form->columns(2)->schema([
@@ -34,6 +37,7 @@ abstract class TaxonomyResource extends Resource
             TextInput::make('description')->maxLength(255)->columnSpanFull(),
             TextInput::make('sort_order')->numeric()->integer()->minValue(0)->default(0),
             Toggle::make('is_active')->label('Visible on the site')->default(true)->inline(false),
+            Toggle::make('show_in_footer')->label('Show in footer (Explore)')->inline(false)->visible(static::$footerToggle),
         ]);
     }
 
@@ -47,6 +51,7 @@ abstract class TaxonomyResource extends Resource
                 Tables\Columns\TextColumn::make('slug')->color('gray'),
                 Tables\Columns\TextColumn::make(static::$countRelation.'_count')->counts(static::$countRelation)->label(Str::headline(static::$countRelation))->alignCenter(),
                 Tables\Columns\ToggleColumn::make('is_active')->label('Visible'),
+                Tables\Columns\ToggleColumn::make('show_in_footer')->label('In footer')->visible(static::$footerToggle),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
