@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'eyebrow', 'title', 'subtitle', 'image', 'image_mobile', 'target_type', 'deck_id', 'product_id',
+    'eyebrow', 'title', 'subtitle', 'image', 'image_mobile', 'video_url', 'target_type', 'deck_id', 'product_id',
     'custom_url', 'cta_label', 'sort_order', 'is_active', 'starts_at', 'ends_at',
 ])]
 class HeroSlide extends Model
@@ -79,5 +79,10 @@ class HeroSlide extends Model
     public function mobileImageUrl(): ?string
     {
         return MediaUrl::resolve($this->image_mobile) ?? $this->imageUrl();
+    }
+
+    public function videoUrl(): ?string
+    {
+        return MediaUrl::resolve($this->video_url);
     }
 }

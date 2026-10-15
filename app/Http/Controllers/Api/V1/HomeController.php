@@ -38,11 +38,12 @@ class HomeController extends Controller
                 'subtitle' => $s->subtitle,
                 'image' => $s->imageUrl(),
                 'image_mobile' => $s->mobileImageUrl(),
+                'video' => $s->videoUrl(),
                 'href' => $s->href(),
                 'cta_label' => $s->ctaLabel(),
                 'kind' => $s->target_type,
             ])
-            ->filter(fn (array $s) => $s['href'] !== null && $s['image'] !== null)
+            ->filter(fn (array $s) => $s['href'] !== null)
             ->values();
 
         $video = (array) SiteSetting::value('home_video', []);

@@ -20,7 +20,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-/** Homepage hero slider: full-width image, copy and a CTA to a deck, product or URL. */
+/** Homepage hero slider: full-width image or video, copy and a CTA to a deck, product or URL. */
 class HeroSlideResource extends Resource
 {
     protected static ?string $model = HeroSlide::class;
@@ -37,13 +37,12 @@ class HeroSlideResource extends Resource
     {
         return $form->columns(3)->schema([
             Section::make('Slide')->columnSpan(2)->schema([
-                TextInput::make('eyebrow')->maxLength(80)->placeholder('New collection'),
+                TextInput::make('eyebrow')->label('Eyebrow / type')->maxLength(80)->placeholder('Digital Decks'),
                 TextInput::make('title')->required()->maxLength(120),
                 TextInput::make('subtitle')->maxLength(255),
                 Grid::make(2)->schema([
                     FileUpload::make('image')
                         ->label('Image (desktop)')
-                        ->required()
                         ->image()
                         ->disk('public')->directory('home/hero')->visibility('public')
                         ->maxSize(6144)
@@ -57,6 +56,13 @@ class HeroSlideResource extends Resource
                         ->imageEditor()
                         ->helperText('Portrait, around 1080 × 1600.'),
                 ]),
+                TextInput::make('video_url')
+                    ->label('Video URL (optional)')
+                    ->placeholder('https://cdn.example.com/hero.mp4')
+                    ->maxLength(255)
+                    ->regex('#^(/[^\s]*|https://[^\s]+)$#')
+                    ->validationMessages(['regex' => 'Use a full https:// link to an .mp4 or .webm file.'])
+                    ->helperText('Plays muted on a loop; the image is shown while it loads. With no image or video the slide uses the brand backdrop.'),
             ]),
             Section::make('Call to action')->columnSpan(1)->schema([
                 ToggleButtons::make('target_type')
@@ -107,7 +113,9 @@ class HeroSlideResource extends Resource
             ->reorderable('sort_order')
             ->defaultSort('sort_order')
             ->columns([
+                Tables\Columns\TextColumn::make('sort_order')->label('#')->color('gray'),
                 Tables\Columns\ImageColumn::make('image')->disk('public')->height(48)->width(96),
+                Tables\Columns\IconColumn::make('video_url')->label('Video')->boolean()->state(fn (HeroSlide $r) => filled($r->video_url)),
                 Tables\Columns\TextColumn::make('title')->weight('medium')->description(fn (HeroSlide $r) => $r->eyebrow),
                 Tables\Columns\TextColumn::make('target_type')->label('Links to')->badge()
                     ->formatStateUsing(fn (string $state, HeroSlide $r) => match ($state) {

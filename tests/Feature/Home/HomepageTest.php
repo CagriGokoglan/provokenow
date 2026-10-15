@@ -9,6 +9,7 @@ use App\Models\InstagramPost;
 use App\Models\Product;
 use App\Models\SiteSetting;
 use App\Models\User;
+use Database\Seeders\HeroSlideSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -57,6 +58,36 @@ class HomepageTest extends TestCase
         $this->assertCount(InstagramPost::HOMEPAGE_LIMIT, $data['instagram']['posts']);
         $this->assertSame('https://www.instagram.com/p/POST1/', $data['instagram']['posts'][0]['url']);
         $this->assertSame('provokenow', $data['instagram']['handle']);
+    }
+
+    public function test_slides_without_an_image_are_served_and_carry_their_video(): void
+    {
+        HeroSlide::create(['title' => 'Backdrop', 'target_type' => 'custom', 'custom_url' => '/decks', 'sort_order' => 1]);
+        HeroSlide::create(['title' => 'Film', 'image' => 'https://cdn.provokenow.com/poster.jpg', 'video_url' => 'https://cdn.provokenow.com/hero.mp4', 'target_type' => 'custom', 'custom_url' => '/store', 'sort_order' => 2]);
+
+        $slides = $this->getJson('/api/v1/home')->assertOk()->json('data.hero_slides');
+
+        $this->assertSame(['Backdrop', 'Film'], array_column($slides, 'title'));
+        $this->assertNull($slides[0]['image']);
+        $this->assertNull($slides[0]['video']);
+        $this->assertSame('https://cdn.provokenow.com/hero.mp4', $slides[1]['video']);
+        $this->assertSame('https://cdn.provokenow.com/poster.jpg', $slides[1]['image_mobile']);
+    }
+
+    public function test_hero_slide_seeder_fills_an_empty_slider_once(): void
+    {
+        $this->seed(HeroSlideSeeder::class);
+        $this->seed(HeroSlideSeeder::class);
+
+        $slides = $this->getJson('/api/v1/home')->json('data.hero_slides');
+        $this->assertSame(array_column(HeroSlideSeeder::SLIDES, 1), array_column($slides, 'title'));
+        $this->assertSame('/store?category=printed-game-boxes', $slides[3]['href']);
+        $this->assertSame('Order Boxed Games', $slides[3]['cta_label']);
+
+        // An admin who deleted slides doesn't get them back on a re-run.
+        HeroSlide::query()->where('sort_order', '>', 1)->delete();
+        $this->seed(HeroSlideSeeder::class);
+        $this->assertSame(1, HeroSlide::count());
     }
 
     public function test_empty_site_returns_empty_sections_not_errors(): void

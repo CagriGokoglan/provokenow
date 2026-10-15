@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             TaxonomySeeder::class,
             DeckSampleSeeder::class,
+            HeroSlideSeeder::class,
         ]);
     }
 }
