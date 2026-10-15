@@ -29,6 +29,8 @@ class CartResource extends JsonResource
                 'unit_price_cents' => $line['unit_price_cents'],
                 'line_subtotal_cents' => $line['line_subtotal_cents'],
                 'applied_discount_cents' => $line['applied_discount_cents'],
+                // Part of applied_discount_cents: "Digital credit applied" on the invoice.
+                'digital_credit_cents' => $line['digital_credit_cents'],
                 'line_total_cents' => $line['line_total_cents'],
                 'product' => new ProductResource($line['item']->product),
             ], $priced['lines']),
@@ -36,6 +38,7 @@ class CartResource extends JsonResource
                 'currency' => $priced['currency'],
                 'subtotal_cents' => $priced['subtotal_cents'],
                 'discount_cents' => $priced['discount_cents'],
+                'digital_credit_cents' => $priced['digital_credit_cents'],
                 'tax_cents' => $priced['tax_cents'],
                 'shipping_cents' => $priced['shipping_cents'],
                 'total_cents' => $priced['total_cents'],

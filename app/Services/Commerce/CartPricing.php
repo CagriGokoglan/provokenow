@@ -4,18 +4,22 @@ namespace App\Services\Commerce;
 
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\User;
 
 /** Prices a cart from current product data. Nothing price-related is trusted from the client. */
 class CartPricing
 {
-    public function __construct(private readonly UpsellEngine $upsell) {}
+    public function __construct(
+        private readonly UpsellEngine $upsell,
+        private readonly DeckEditions $editions,
+    ) {}
 
     /**
      * Expects items.product.decks to be loaded.
      *
      * @return array{
-     *     lines: list<array{item: CartItem, unit_price_cents: int, line_subtotal_cents: int, applied_discount_cents: int, line_total_cents: int, available: bool}>,
-     *     subtotal_cents: int, discount_cents: int, tax_cents: int, shipping_cents: int, total_cents: int,
+     *     lines: list<array{item: CartItem, unit_price_cents: int, line_subtotal_cents: int, applied_discount_cents: int, digital_credit_cents: int, line_total_cents: int, available: bool}>,
+     *     subtotal_cents: int, discount_cents: int, digital_credit_cents: int, tax_cents: int, shipping_cents: int, total_cents: int,
      *     requires_shipping: bool, currency: string
      * }
      */
@@ -23,6 +27,9 @@ class CartPricing
     {
         $items = $cart->items->keyBy('id');
         $lines = [];
+        // Upgrade credit needs an account (guests have no purchases to credit).
+        $user = $cart->user_id ? User::find($cart->user_id) : null;
+        $creditedDecks = [];
 
         foreach ($cart->items as $item) {
             $product = $item->product;
@@ -37,11 +44,23 @@ class CartPricing
                 $discount = $this->upsell->unitDiscountCents($product, $percent) * min($item->quantity, $anchor->quantity);
             }
 
+            // Digital-to-physical upgrade: once per deck per cart (extra boxes, e.g. gifts, are full price).
+            $credit = 0;
+            $deckIds = $product->decks->modelKeys();
+            if ($user && array_intersect($deckIds, $creditedDecks) === []) {
+                $credit = min($this->editions->creditForProduct($user, $product), $unit, $lineSubtotal - $discount);
+                if ($credit > 0) {
+                    $creditedDecks = [...$creditedDecks, ...$deckIds];
+                }
+            }
+            $discount += $credit;
+
             $lines[] = [
                 'item' => $item,
                 'unit_price_cents' => $unit,
                 'line_subtotal_cents' => $lineSubtotal,
                 'applied_discount_cents' => $discount,
+                'digital_credit_cents' => $credit,
                 'line_total_cents' => $lineSubtotal - $discount,
                 'available' => $product->is_active && $product->hasStockFor($item->quantity),
             ];
@@ -61,6 +80,7 @@ class CartPricing
             'lines' => $lines,
             'subtotal_cents' => $subtotal,
             'discount_cents' => $discount,
+            'digital_credit_cents' => array_sum(array_column($lines, 'digital_credit_cents')),
             'tax_cents' => $tax,
             'shipping_cents' => $shipping,
             'total_cents' => $taxable + $tax + $shipping,

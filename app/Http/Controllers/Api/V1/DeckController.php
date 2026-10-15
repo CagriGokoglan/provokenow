@@ -8,6 +8,7 @@ use App\Http\Resources\CardResource;
 use App\Http\Resources\DeckResource;
 use App\Models\Deck;
 use App\Services\Access\VaultService;
+use App\Services\Commerce\DeckEditions;
 use App\Services\Seo\SchemaGeneratorService;
 use App\Services\Seo\SeoMetadataService;
 use App\Support\ApiResponse;
@@ -75,6 +76,7 @@ class DeckController extends Controller
         VaultService $vault,
         SeoMetadataService $seo,
         SchemaGeneratorService $schema,
+        DeckEditions $editions,
     ): JsonResponse {
         $deck = Deck::active()->where('deck_code', strtoupper($deckCode))
             ->with(['categories' => fn ($q) => $q->active()])
@@ -96,6 +98,9 @@ class DeckController extends Controller
 
         $totalCards = $deck->cards()->count();
         $products = $deck->products()->active()->with('decks:id')->get();
+        ['digital' => $digital, 'physical' => $physical] = $editions->editionsFor($deck);
+        $owned = $editions->ownership($user, $deck);
+        $credit = $physical ? min($owned['digital_credit_cents'], $physical->effectivePriceCents()) : 0;
 
         return ApiResponse::success([
             'deck' => new DeckResource($deck),
@@ -103,6 +108,16 @@ class DeckController extends Controller
             'lock_reason' => $lockReason,
             'has_entitlement' => $entitled,
             'total_cards' => $totalCards,
+            // Digital vs physical edition, and the viewer's position (all false/0 for guests).
+            'editions' => [
+                'digital' => $digital ? ['product_slug' => $digital->slug, 'product_id' => $digital->id, 'price_cents' => $digital->effectivePriceCents()] : null,
+                'physical' => $physical ? ['product_slug' => $physical->slug, 'product_id' => $physical->id, 'price_cents' => $physical->effectivePriceCents()] : null,
+                'user_owns_digital' => $owned['owns_digital'],
+                'user_owns_physical' => $owned['owns_physical'],
+                'is_eligible_for_upgrade_discount' => $credit > 0,
+                'upgrade_discount_cents' => $credit,
+                'final_physical_price_cents' => $physical ? $physical->effectivePriceCents() - $credit : null,
+            ],
             'cards' => CardResource::collection($cards),
             'seo' => $seo->forDeck($deck),
             // Built from the public preview card only, regardless of the viewer's access.
