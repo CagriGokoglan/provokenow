@@ -81,9 +81,4 @@ class HeroSlide extends Model
     {
         return MediaUrl::resolve($this->image_mobile) ?? $this->imageUrl();
     }
-
-    public function videoUrl(): ?string
-    {
-        return MediaUrl::resolve($this->video_url);
-    }
 }

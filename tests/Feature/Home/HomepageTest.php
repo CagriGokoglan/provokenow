@@ -37,7 +37,7 @@ class HomepageTest extends TestCase
         foreach (range(1, 4) as $i) {
             InstagramPost::create(['post_url' => "https://www.instagram.com/p/POST{$i}/", 'image' => "https://cdn.provokenow.com/ig{$i}.jpg", 'sort_order' => $i]);
         }
-        SiteSetting::put('home_video', ['url' => 'https://cdn.provokenow.com/film.mp4', 'headline' => 'After dark']);
+        SiteSetting::put('home_video', ['url' => 'https://youtu.be/dQw4w9WgXcQ', 'headline' => 'After dark']);
         SiteSetting::put('instagram', ['handle' => 'provokenow', 'profile_url' => 'https://www.instagram.com/provokenow/']);
 
         $data = $this->getJson('/api/v1/home')->assertOk()->json('data');
@@ -51,7 +51,8 @@ class HomepageTest extends TestCase
         $this->assertSame(['Corset'], array_column($data['new_arrivals'], 'name'));
         $this->assertSame(['DECK-007'], array_column($data['showcase_decks'], 'deck_code'));
 
-        $this->assertSame('https://cdn.provokenow.com/film.mp4', $data['video']['url']);
+        $this->assertSame('dQw4w9WgXcQ', $data['video']['youtube_id']);
+        $this->assertSame(100, $data['video']['opacity'], 'Full opacity unless the admin lowers it.');
         $this->assertSame('After dark', $data['video']['headline']);
         $this->assertTrue($data['club']['enabled'], 'Provoke Club shows by default.');
 
@@ -63,14 +64,14 @@ class HomepageTest extends TestCase
     public function test_slides_without_an_image_are_served_and_carry_their_video(): void
     {
         HeroSlide::create(['title' => 'Backdrop', 'target_type' => 'custom', 'custom_url' => '/decks', 'sort_order' => 1]);
-        HeroSlide::create(['title' => 'Film', 'image' => 'https://cdn.provokenow.com/poster.jpg', 'video_url' => 'https://cdn.provokenow.com/hero.mp4', 'target_type' => 'custom', 'custom_url' => '/store', 'sort_order' => 2]);
+        HeroSlide::create(['title' => 'Film', 'image' => 'https://cdn.provokenow.com/poster.jpg', 'video_url' => 'https://www.youtube.com/shorts/dQw4w9WgXcQ', 'target_type' => 'custom', 'custom_url' => '/store', 'sort_order' => 2]);
 
         $slides = $this->getJson('/api/v1/home')->assertOk()->json('data.hero_slides');
 
         $this->assertSame(['Backdrop', 'Film'], array_column($slides, 'title'));
         $this->assertNull($slides[0]['image']);
-        $this->assertNull($slides[0]['video']);
-        $this->assertSame('https://cdn.provokenow.com/hero.mp4', $slides[1]['video']);
+        $this->assertNull($slides[0]['youtube_id']);
+        $this->assertSame('dQw4w9WgXcQ', $slides[1]['youtube_id']);
         $this->assertSame('https://cdn.provokenow.com/poster.jpg', $slides[1]['image_mobile']);
     }
 
@@ -97,7 +98,7 @@ class HomepageTest extends TestCase
         foreach (['hero_slides', 'popular_products', 'showcase_decks', 'boxed_games', 'new_arrivals'] as $section) {
             $this->assertSame([], $data[$section], $section);
         }
-        $this->assertNull($data['video']['url']);
+        $this->assertNull($data['video']['youtube_id']);
         $this->assertSame([], $data['instagram']['posts']);
     }
 

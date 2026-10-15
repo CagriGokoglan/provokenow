@@ -11,7 +11,7 @@ use App\Models\InstagramPost;
 use App\Models\Product;
 use App\Models\SiteSetting;
 use App\Support\ApiResponse;
-use App\Support\MediaUrl;
+use App\Support\YouTube;
 use Illuminate\Http\JsonResponse;
 
 /**
@@ -38,7 +38,7 @@ class HomeController extends Controller
                 'subtitle' => $s->subtitle,
                 'image' => $s->imageUrl(),
                 'image_mobile' => $s->mobileImageUrl(),
-                'video' => $s->videoUrl(),
+                'youtube_id' => YouTube::id($s->video_url),
                 'href' => $s->href(),
                 'cta_label' => $s->ctaLabel(),
                 'kind' => $s->target_type,
@@ -57,8 +57,8 @@ class HomeController extends Controller
             'boxed_games' => ProductResource::collection($products()->where('is_boxed_game', true)->orderBy('sort_order')->orderBy('name')->limit(self::SHOWCASE_LIMIT)->get()),
             'new_arrivals' => ProductResource::collection($products()->where('is_new_arrival', true)->orderBy('sort_order')->latest()->limit(self::GRID_LIMIT)->get()),
             'video' => [
-                'url' => MediaUrl::resolve($video['file'] ?? null) ?? ($video['url'] ?? null),
-                'poster' => MediaUrl::resolve($video['poster'] ?? null),
+                'youtube_id' => YouTube::id($video['url'] ?? null),
+                'opacity' => max(0, min(100, (int) ($video['opacity'] ?? 100))),
                 'headline' => $video['headline'] ?? null,
             ],
             'club' => [

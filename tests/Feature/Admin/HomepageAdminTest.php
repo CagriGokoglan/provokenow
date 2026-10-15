@@ -34,7 +34,7 @@ class HomepageAdminTest extends TestCase
     {
         Livewire::test(SiteSettings::class)
             ->fillForm([
-                'home_video' => ['url' => 'https://cdn.provokenow.com/film.mp4', 'headline' => 'After dark'],
+                'home_video' => ['url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=12s', 'opacity' => 60, 'headline' => 'After dark'],
                 'club' => ['enabled' => false, 'headline' => 'Provoke Club'],
                 'instagram' => ['handle' => 'provokenow'],
                 'socials' => ['instagram' => 'https://www.instagram.com/provokenow/'],
@@ -46,13 +46,19 @@ class HomepageAdminTest extends TestCase
 
         $this->assertSame('After dark', SiteSetting::value('home_video')['headline']);
         $this->getJson('/api/v1/home')
-            ->assertJsonPath('data.video.url', 'https://cdn.provokenow.com/film.mp4')
+            ->assertJsonPath('data.video.youtube_id', 'dQw4w9WgXcQ')
+            ->assertJsonPath('data.video.opacity', 60)
             ->assertJsonPath('data.club.enabled', false);
 
         Livewire::test(SiteSettings::class)
             ->fillForm(['socials' => ['tiktok' => 'http://insecure.example']])
             ->call('save')
             ->assertHasFormErrors(['socials.tiktok']);
+
+        Livewire::test(SiteSettings::class)
+            ->fillForm(['home_video' => ['url' => 'https://vimeo.com/123456', 'opacity' => 150]])
+            ->call('save')
+            ->assertHasFormErrors(['home_video.url', 'home_video.opacity']);
     }
 
     public function test_hero_slide_links_to_a_deck(): void

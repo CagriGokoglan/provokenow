@@ -6,6 +6,7 @@ use App\Filament\Resources\HeroSlideResource\Pages;
 use App\Models\Deck;
 use App\Models\HeroSlide;
 use App\Models\Product;
+use App\Support\YouTube;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
@@ -57,12 +58,11 @@ class HeroSlideResource extends Resource
                         ->helperText('Portrait, around 1080 × 1600.'),
                 ]),
                 TextInput::make('video_url')
-                    ->label('Video URL (optional)')
-                    ->placeholder('https://cdn.example.com/hero.mp4')
+                    ->label('YouTube link (optional)')
+                    ->placeholder('https://www.youtube.com/watch?v=…')
                     ->maxLength(255)
-                    ->regex('#^(/[^\s]*|https://[^\s]+)$#')
-                    ->validationMessages(['regex' => 'Use a full https:// link to an .mp4 or .webm file.'])
-                    ->helperText('Plays muted on a loop; the image is shown while it loads. With no image or video the slide uses the brand backdrop.'),
+                    ->rule(YouTube::rule())
+                    ->helperText('Autoplays muted on a loop behind the copy; the image shows while it loads. With no image or video the slide uses the brand backdrop.'),
             ]),
             Section::make('Call to action')->columnSpan(1)->schema([
                 ToggleButtons::make('target_type')

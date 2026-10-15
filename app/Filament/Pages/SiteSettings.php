@@ -3,8 +3,8 @@
 namespace App\Filament\Pages;
 
 use App\Models\SiteSetting;
+use App\Support\YouTube;
 use Filament\Actions\Action;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
@@ -45,24 +45,18 @@ class SiteSettings extends Page implements HasForms
     public function form(Form $form): Form
     {
         return $form->statePath('data')->schema([
-            Section::make('Full-page video')->description('Plays muted on a loop between New Arrivals and Provoke Club.')->columns(2)->schema([
-                FileUpload::make('home_video.file')
-                    ->label('Video file (MP4 / WebM)')
-                    ->acceptedFileTypes(['video/mp4', 'video/webm'])
-                    ->disk('public')->directory('home/video')->visibility('public')
-                    ->maxSize(102400)
-                    ->helperText('Up to 100 MB. Keep it short (10–30 s) and compressed for fast loading.'),
+            Section::make('Full-page video')->description('A YouTube video that autoplays muted on a loop, without controls, between New Arrivals and Provoke Club.')->columns(2)->schema([
                 TextInput::make('home_video.url')
-                    ->label('…or video URL')
-                    ->url()
-                    ->placeholder('https://cdn.example.com/brand-film.mp4')
-                    ->helperText('Used when no file is uploaded.'),
-                FileUpload::make('home_video.poster')
-                    ->label('Poster image')
-                    ->image()
-                    ->disk('public')->directory('home/video')->visibility('public')
-                    ->maxSize(4096)
-                    ->helperText('Shown while the video loads and for visitors who prefer reduced motion.'),
+                    ->label('YouTube link')
+                    ->placeholder('https://www.youtube.com/watch?v=…')
+                    ->rule(YouTube::rule())
+                    ->columnSpanFull(),
+                TextInput::make('home_video.opacity')
+                    ->label('Video opacity')
+                    ->numeric()->integer()->minValue(0)->maxValue(100)
+                    ->suffix('%')
+                    ->default(100)
+                    ->helperText('Lower it to darken the video behind the headline (100 = fully visible).'),
                 TextInput::make('home_video.headline')->label('Overlay headline')->maxLength(120),
             ]),
 
