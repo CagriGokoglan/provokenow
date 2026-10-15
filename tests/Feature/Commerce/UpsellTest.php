@@ -37,7 +37,7 @@ class UpsellTest extends TestCase
         $this->massageOil = Product::factory()->accessory(['deck_codes' => ['DECK-020']], 2400)->create(['name' => 'Massage Oil']);
 
         // Must never be suggested for DECK-020:
-        $this->unrelatedAccessory = Product::factory()->accessory(['segments' => ['Advanced_Taboo']])->create();
+        $this->unrelatedAccessory = Product::factory()->accessory(['segments' => ['Taboo']])->create();
         Product::factory()->podDeck($otherDeck)->create();
         Product::factory()->accessory(['segments' => ['Medium_Spice']])->inactive()->create();
         Product::factory()->accessory(['segments' => ['Medium_Spice']], stock: 0)->create();

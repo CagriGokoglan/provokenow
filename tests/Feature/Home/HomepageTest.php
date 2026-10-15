@@ -1,0 +1,99 @@
+<?php
+
+namespace Tests\Feature\Home;
+
+use App\Models\ClubSignup;
+use App\Models\Deck;
+use App\Models\HeroSlide;
+use App\Models\InstagramPost;
+use App\Models\Product;
+use App\Models\SiteSetting;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+
+class HomepageTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_homepage_payload_returns_each_admin_managed_section(): void
+    {
+        $deck = Deck::factory()->create(['deck_code' => 'DECK-007']);
+        $inactiveDeck = Deck::factory()->inactive()->create(['deck_code' => 'DECK-008']);
+        $box = Product::factory()->podDeck($deck)->create(['name' => 'Box', 'slug' => 'box', 'is_boxed_game' => true, 'is_featured' => true]);
+        Product::factory()->accessory()->create(['name' => 'Corset', 'is_new_arrival' => true]);
+        Product::factory()->accessory()->inactive()->create(['is_featured' => true]);
+
+        HeroSlide::create(['title' => 'Deck slide', 'image' => 'https://cdn.provokenow.com/h1.jpg', 'target_type' => 'deck', 'deck_id' => $deck->id, 'sort_order' => 2]);
+        HeroSlide::create(['title' => 'Product slide', 'image' => 'https://cdn.provokenow.com/h2.jpg', 'target_type' => 'product', 'product_id' => $box->id, 'cta_label' => 'Get the box', 'sort_order' => 1]);
+        HeroSlide::create(['title' => 'Custom', 'image' => 'https://cdn.provokenow.com/h3.jpg', 'target_type' => 'custom', 'custom_url' => '/store?category=heels', 'sort_order' => 3]);
+        HeroSlide::create(['title' => 'Dead link', 'image' => 'https://cdn.provokenow.com/h4.jpg', 'target_type' => 'deck', 'deck_id' => $inactiveDeck->id]);
+        HeroSlide::create(['title' => 'Off', 'image' => 'https://cdn.provokenow.com/h5.jpg', 'target_type' => 'custom', 'custom_url' => '/', 'is_active' => false]);
+        HeroSlide::create(['title' => 'Expired', 'image' => 'https://cdn.provokenow.com/h6.jpg', 'target_type' => 'custom', 'custom_url' => '/', 'ends_at' => now()->subDay()]);
+        HeroSlide::create(['title' => 'Scheduled', 'image' => 'https://cdn.provokenow.com/h7.jpg', 'target_type' => 'custom', 'custom_url' => '/', 'starts_at' => now()->addDay()]);
+
+        foreach (range(1, 4) as $i) {
+            InstagramPost::create(['post_url' => "https://www.instagram.com/p/POST{$i}/", 'image' => "https://cdn.provokenow.com/ig{$i}.jpg", 'sort_order' => $i]);
+        }
+        SiteSetting::put('home_video', ['url' => 'https://cdn.provokenow.com/film.mp4', 'headline' => 'After dark']);
+        SiteSetting::put('instagram', ['handle' => 'provokenow', 'profile_url' => 'https://www.instagram.com/provokenow/']);
+
+        $data = $this->getJson('/api/v1/home')->assertOk()->json('data');
+
+        $this->assertSame(['Product slide', 'Deck slide', 'Custom'], array_column($data['hero_slides'], 'title'));
+        $this->assertSame(['/store/box', '/decks/deck-007', '/store?category=heels'], array_column($data['hero_slides'], 'href'));
+        $this->assertSame(['Get the box', 'Explore Deck', 'Discover'], array_column($data['hero_slides'], 'cta_label'));
+
+        $this->assertSame(['Box'], array_column($data['popular_products'], 'name'));
+        $this->assertSame(['Box'], array_column($data['boxed_games'], 'name'));
+        $this->assertSame(['Corset'], array_column($data['new_arrivals'], 'name'));
+        $this->assertSame(['DECK-007'], array_column($data['showcase_decks'], 'deck_code'));
+
+        $this->assertSame('https://cdn.provokenow.com/film.mp4', $data['video']['url']);
+        $this->assertSame('After dark', $data['video']['headline']);
+        $this->assertTrue($data['club']['enabled'], 'Provoke Club shows by default.');
+
+        $this->assertCount(InstagramPost::HOMEPAGE_LIMIT, $data['instagram']['posts']);
+        $this->assertSame('https://www.instagram.com/p/POST1/', $data['instagram']['posts'][0]['url']);
+        $this->assertSame('provokenow', $data['instagram']['handle']);
+    }
+
+    public function test_empty_site_returns_empty_sections_not_errors(): void
+    {
+        $data = $this->getJson('/api/v1/home')->assertOk()->json('data');
+
+        foreach (['hero_slides', 'popular_products', 'showcase_decks', 'boxed_games', 'new_arrivals'] as $section) {
+            $this->assertSame([], $data[$section], $section);
+        }
+        $this->assertNull($data['video']['url']);
+        $this->assertSame([], $data['instagram']['posts']);
+    }
+
+    public function test_public_config_carries_footer_socials_and_drops_unsafe_links(): void
+    {
+        SiteSetting::put('socials', ['instagram' => 'https://www.instagram.com/provokenow/', 'tiktok' => 'javascript:alert(1)', 'x' => '']);
+        SiteSetting::put('brand_story', 'Conversation, by design.');
+
+        $this->getJson('/api/v1/config/public')
+            ->assertJsonPath('data.socials', ['instagram' => 'https://www.instagram.com/provokenow/'])
+            ->assertJsonPath('data.brand_story', 'Conversation, by design.');
+    }
+
+    public function test_provoke_club_signup_is_idempotent_and_requires_consent(): void
+    {
+        $this->postJson('/api/v1/club/subscribe', ['email' => 'ava@example.com'])->assertUnprocessable()->assertJsonValidationErrors('consent');
+
+        $this->postJson('/api/v1/club/subscribe', ['email' => 'Ava@Example.com ', 'consent' => true])->assertCreated()->assertJsonPath('success', true);
+        // Same answer for an existing address: the endpoint never reveals who is on the list.
+        $this->postJson('/api/v1/club/subscribe', ['email' => 'ava@example.com', 'consent' => true])->assertCreated();
+
+        $this->assertSame(1, ClubSignup::count());
+        $this->assertSame('ava@example.com', ClubSignup::first()->email);
+
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+        $this->postJson('/api/v1/club/subscribe', ['email' => 'member@example.com', 'consent' => true])->assertCreated();
+        $this->assertSame($user->id, ClubSignup::firstWhere('email', 'member@example.com')->user_id);
+    }
+}

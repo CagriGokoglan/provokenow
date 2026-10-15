@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\SiteSetting;
 use App\Services\Seo\SchemaGeneratorService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -29,6 +30,8 @@ class PublicConfigController extends Controller
                 'supported' => config('provoke.seo.supported_locales'),
                 'currency' => config('provoke.commerce.currency'),
             ],
+            'socials' => array_filter((array) SiteSetting::value('socials', []), fn ($url) => is_string($url) && str_starts_with($url, 'https://')),
+            'brand_story' => SiteSetting::value('brand_story'),
             // Site-wide Organization entity for the frontend's root layout.
             'organization_schema_json_ld' => $schema->graph([$schema->organization()]),
         ], 'Public configuration.')->header('Cache-Control', 'public, max-age=300');

@@ -21,6 +21,8 @@ class DeckResource extends JsonResource
             'deck_code' => $this->deck_code,
             'title' => $this->title,
             'segment' => $this->segment->value,
+            'level' => ['slug' => $this->segment->slug(), 'label' => $this->segment->label(), 'rank' => $this->segment->rank()],
+            'categories' => $this->whenLoaded('categories', fn () => $this->categories->map(fn ($c) => ['name' => $c->name, 'slug' => $c->slug])->values()),
             'intensity_level' => $this->intensity_level,
             'core_theme' => $this->core_theme_keywords,
             'core_theme_keywords' => $this->themeKeywords(),

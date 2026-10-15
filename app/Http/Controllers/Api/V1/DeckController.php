@@ -25,6 +25,9 @@ class DeckController extends Controller
     {
         $filters = $request->validate([
             'segment' => ['sometimes', Rule::enum(DeckSegment::class)],
+            // Web-app slugs: light-ignition | medium-spice | advanced | taboo
+            'level' => ['sometimes', 'string', Rule::in(array_map(fn (DeckSegment $s) => $s->slug(), DeckSegment::cases()))],
+            'category' => ['sometimes', 'string', 'max:80'],
             'intensity_level' => ['sometimes', 'integer', 'between:1,4'],
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
         ]);
@@ -32,7 +35,10 @@ class DeckController extends Controller
         // Metadata columns only: no cards, no AI prompt.
         $decks = Deck::active()
             ->select(['id', 'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'pod_card_box_theme', 'card_front_bg_url', 'card_back_bg_url'])
+            ->with(['categories' => fn ($q) => $q->active()->select('deck_categories.id', 'name', 'slug')])
             ->when($filters['segment'] ?? null, fn ($q, $segment) => $q->where('segment', $segment))
+            ->when($filters['level'] ?? null, fn ($q, $level) => $q->where('segment', DeckSegment::fromSlug($level)->value))
+            ->when($filters['category'] ?? null, fn ($q, $slug) => $q->whereHas('categories', fn ($c) => $c->where('slug', $slug)->where('is_active', true)))
             ->when($filters['intensity_level'] ?? null, fn ($q, $level) => $q->where('intensity_level', $level))
             ->orderBy('deck_code')
             ->paginate($filters['per_page'] ?? 50);
@@ -47,7 +53,9 @@ class DeckController extends Controller
         SeoMetadataService $seo,
         SchemaGeneratorService $schema,
     ): JsonResponse {
-        $deck = Deck::active()->where('deck_code', strtoupper($deckCode))->firstOrFail();
+        $deck = Deck::active()->where('deck_code', strtoupper($deckCode))
+            ->with(['categories' => fn ($q) => $q->active()])
+            ->firstOrFail();
         $user = $request->user('sanctum');
 
         $entitled = $user && ($user->isStaff() || $user->hasAccessToDeck($deck));

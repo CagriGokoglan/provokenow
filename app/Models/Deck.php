@@ -41,6 +41,12 @@ class Deck extends Model
         return $this->hasMany(Card::class)->orderBy('card_number');
     }
 
+    /** Fantasy / content tags (admin-managed). */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(DeckCategory::class, 'deck_category_deck');
+    }
+
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'product_deck_claims')->withTimestamps();

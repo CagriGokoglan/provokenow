@@ -50,7 +50,7 @@ class SitemapTest extends TestCase
             'https://provokenow.com/',
             'https://provokenow.com/decks',
             'https://provokenow.com/decks/deck-001',
-            'https://provokenow.com/shop/silk-blindfold',
+            'https://provokenow.com/store/silk-blindfold',
         ], $locs);
 
         foreach (['/vault', '/checkout', '/user', '/cart', 'deck-002', 'retired-product', '/api/'] as $forbidden) {

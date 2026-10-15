@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'sku', 'name', 'slug', 'product_type', 'price_cents', 'sale_price_cents',
     'stock_quantity', 'is_active', 'description', 'metadata',
     'meta_title', 'meta_description', 'canonical_url', 'og_image',
+    'product_category_id', 'is_featured', 'is_new_arrival', 'is_boxed_game', 'sort_order',
 ])]
 class Product extends Model
 {
@@ -27,6 +29,10 @@ class Product extends Model
     protected $attributes = [
         'stock_quantity' => self::UNLIMITED_STOCK,
         'is_active' => true,
+        'is_featured' => false,
+        'is_new_arrival' => false,
+        'is_boxed_game' => false,
+        'sort_order' => 0,
     ];
 
     protected function casts(): array
@@ -38,7 +44,16 @@ class Product extends Model
             'stock_quantity' => 'integer',
             'is_active' => 'boolean',
             'metadata' => 'array',
+            'is_featured' => 'boolean',
+            'is_new_arrival' => 'boolean',
+            'is_boxed_game' => 'boolean',
+            'sort_order' => 'integer',
         ];
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ProductCategory::class, 'product_category_id');
     }
 
     /** Decks a purchase of this product grants access to. */

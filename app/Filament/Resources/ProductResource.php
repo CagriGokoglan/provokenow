@@ -61,12 +61,35 @@ class ProductResource extends Resource
                     TextInput::make('sku')->label('SKU')->required()->maxLength(64)->unique(ignoreRecord: true),
                     Select::make('product_type')->options(ProductType::class)->required()->native(false)->live(),
                     Textarea::make('description')->rows(5)->columnSpanFull(),
+                    Select::make('product_category_id')
+                        ->label('Store category')
+                        ->relationship('category', 'name', fn ($query) => $query->orderBy('sort_order'))
+                        ->preload()
+                        ->searchable()
+                        ->placeholder('— none (games live under the Games tab) —')
+                        ->helperText('Dice, Lingerie & Underwear, Heels… Manage under Catalog → Store Categories.'),
                     Toggle::make('is_active')->label('Active (purchasable)')->default(true),
                     Toggle::make('metadata.requires_shipping')
                         ->label('Requires shipping')
                         ->helperText('Bundles only: whether this bundle contains physical items.')
                         ->default(true)
                         ->visible(fn (Get $get) => $get('product_type') === ProductType::Bundle->value || $get('product_type') === ProductType::Bundle),
+                ]),
+
+                Tab::make('Merchandising')->icon('heroicon-o-star')->columns(2)->schema([
+                    Toggle::make('is_featured')
+                        ->label('Popular Products (homepage)')
+                        ->helperText('Shown in the "Popular Products" grid.'),
+                    Toggle::make('is_new_arrival')
+                        ->label('New Arrivals (homepage)')
+                        ->helperText('Shown in the "New Arrivals" grid.'),
+                    Toggle::make('is_boxed_game')
+                        ->label('Printed Game Boxes showcase')
+                        ->helperText('Moves this product into the Printed Game Boxes section (homepage + Store tab).'),
+                    TextInput::make('sort_order')
+                        ->label('Showcase order')
+                        ->numeric()->integer()->minValue(0)->default(0)
+                        ->helperText('Lower numbers appear first.'),
                 ]),
 
                 Tab::make('Pricing & Stock')->icon('heroicon-o-banknotes')->columns(3)->schema([
@@ -190,10 +213,18 @@ class ProductResource extends Resource
                         default => null,
                     }),
                 Tables\Columns\TextColumn::make('decks_count')->counts('decks')->label('Decks')->alignCenter(),
+                Tables\Columns\TextColumn::make('category.name')->label('Category')->badge()->color('gray')->placeholder('—')->toggleable(),
+                Tables\Columns\ToggleColumn::make('is_featured')->label('Popular')->toggleable(),
+                Tables\Columns\ToggleColumn::make('is_new_arrival')->label('New')->toggleable(),
+                Tables\Columns\ToggleColumn::make('is_boxed_game')->label('Boxed')->toggleable(),
                 Tables\Columns\ToggleColumn::make('is_active')->label('Active'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('product_type')->options(ProductType::class),
+                Tables\Filters\SelectFilter::make('product_category_id')->label('Category')->relationship('category', 'name')->preload(),
+                Tables\Filters\TernaryFilter::make('is_featured')->label('Popular'),
+                Tables\Filters\TernaryFilter::make('is_new_arrival')->label('New arrival'),
+                Tables\Filters\TernaryFilter::make('is_boxed_game')->label('Printed game box'),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
             ])
             ->actions([

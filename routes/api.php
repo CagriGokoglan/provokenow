@@ -1,12 +1,17 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Account\AccountController;
+use App\Http\Controllers\Api\V1\Account\AddressController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CheckoutController;
+use App\Http\Controllers\Api\V1\ClubController;
 use App\Http\Controllers\Api\V1\DeckController;
+use App\Http\Controllers\Api\V1\HomeController;
 use App\Http\Controllers\Api\V1\OrderFulfillmentController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PublicConfigController;
+use App\Http\Controllers\Api\V1\TaxonomyController;
 use App\Http\Controllers\Api\V1\User\EntitlementController;
 use App\Http\Controllers\Api\V1\User\VaultController;
 use App\Http\Controllers\Api\V1\Webhooks\StripeWebhookController;
@@ -30,6 +35,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
     });
 
     Route::get('config/public', PublicConfigController::class)->name('config.public');
+    Route::get('home', HomeController::class)->name('home');
+    Route::get('taxonomies', TaxonomyController::class)->name('taxonomies');
+    Route::post('club/subscribe', [ClubController::class, 'subscribe'])->middleware('throttle:club')->name('club.subscribe');
 
     // Catalogue (public)
     Route::get('decks', [DeckController::class, 'index'])->name('decks.index');
@@ -63,6 +71,13 @@ Route::prefix('v1')->name('v1.')->group(function () {
     // Account
     Route::middleware('auth:sanctum')->prefix('user')->name('user.')->group(function () {
         Route::get('entitlements', [EntitlementController::class, 'index'])->name('entitlements.index');
+        Route::get('orders', [AccountController::class, 'orders'])->name('orders.index');
+        Route::patch('profile', [AccountController::class, 'updateProfile'])->name('profile.update');
+        Route::put('password', [AccountController::class, 'updatePassword'])->middleware('throttle:auth')->name('password.update');
+        Route::get('addresses', [AddressController::class, 'index'])->name('addresses.index');
+        Route::post('addresses', [AddressController::class, 'store'])->name('addresses.store');
+        Route::patch('addresses/{id}', [AddressController::class, 'update'])->whereUuid('id')->name('addresses.update');
+        Route::delete('addresses/{id}', [AddressController::class, 'destroy'])->whereUuid('id')->name('addresses.destroy');
         Route::post('vault/passcode', [VaultController::class, 'setPasscode'])->middleware('throttle:vault')->name('vault.passcode');
         Route::post('vault/verify', [VaultController::class, 'verify'])->middleware('throttle:vault')->name('vault.verify');
     });

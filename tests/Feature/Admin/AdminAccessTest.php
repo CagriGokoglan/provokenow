@@ -37,7 +37,11 @@ class AdminAccessTest extends TestCase
         foreach ([UserRole::Admin, UserRole::SuperAdmin] as $role) {
             $this->actingAs($this->user($role));
 
-            foreach (['/admin', '/admin/decks', '/admin/decks/create', '/admin/products', '/admin/products/create', '/admin/orders', '/admin/users'] as $url) {
+            foreach ([
+                '/admin', '/admin/decks', '/admin/decks/create', '/admin/products', '/admin/products/create', '/admin/orders', '/admin/users',
+                '/admin/deck-categories', '/admin/product-categories', '/admin/hero-slides', '/admin/hero-slides/create',
+                '/admin/instagram-posts', '/admin/site-settings', '/admin/club-signups',
+            ] as $url) {
                 $this->get($url)->assertOk();
             }
         }

@@ -49,6 +49,7 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make('Catalog'),
                 NavigationGroup::make('Commerce'),
+                NavigationGroup::make('Homepage'),
                 NavigationGroup::make('Customers'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')

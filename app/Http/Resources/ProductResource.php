@@ -26,6 +26,10 @@ class ProductResource extends JsonResource
             'requires_shipping' => $this->requiresShipping(),
             'images' => $this->images(),
             'description' => $this->description,
+            'category' => $this->whenLoaded('category', fn () => $this->category ? ['name' => $this->category->name, 'slug' => $this->category->slug] : null),
+            'is_featured' => $this->is_featured,
+            'is_new_arrival' => $this->is_new_arrival,
+            'is_boxed_game' => $this->is_boxed_game,
             'deck_claim_ids' => $this->whenLoaded('decks', fn () => $this->decks->modelKeys()),
             'deck_claims' => $this->whenLoaded('decks', fn () => $this->decks->map(fn ($deck) => [
                 'id' => $deck->id,

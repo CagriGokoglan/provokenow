@@ -49,6 +49,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(Order::class);
     }
 
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(UserAddress::class)->orderByDesc('is_default')->oldest();
+    }
+
     public function cart(): HasOne
     {
         return $this->hasOne(Cart::class);

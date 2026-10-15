@@ -44,6 +44,8 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        RateLimiter::for('club', fn (Request $request) => Limit::perMinute(5)->by('club:'.$request->ip()));
+
         // Passcodes are short; keep brute force impractical.
         RateLimiter::for('vault', fn (Request $request) => Limit::perMinute(5)->by('vault:'.$request->user()?->getKey()));
 

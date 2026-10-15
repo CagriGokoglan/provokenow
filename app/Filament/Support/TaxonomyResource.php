@@ -1,0 +1,56 @@
+<?php
+
+namespace App\Filament\Support;
+
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Form;
+use Filament\Forms\Set;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Support\Str;
+
+/** Shared form/table for simple name + slug category lists (deck & store categories). */
+abstract class TaxonomyResource extends Resource
+{
+    /** Relationship counted in the table ("decks" / "products"). */
+    protected static string $countRelation;
+
+    public static function form(Form $form): Form
+    {
+        return $form->columns(2)->schema([
+            TextInput::make('name')
+                ->required()
+                ->maxLength(80)
+                ->live(onBlur: true)
+                ->afterStateUpdated(fn (?string $state, Set $set, string $operation) => $operation === 'create' ? $set('slug', Str::slug((string) $state)) : null),
+            TextInput::make('slug')
+                ->required()
+                ->maxLength(80)
+                ->alphaDash()
+                ->unique(ignoreRecord: true)
+                ->helperText('Used in URLs, e.g. /decks?category=roleplay'),
+            TextInput::make('description')->maxLength(255)->columnSpanFull(),
+            TextInput::make('sort_order')->numeric()->integer()->minValue(0)->default(0),
+            Toggle::make('is_active')->label('Visible on the site')->default(true)->inline(false),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->reorderable('sort_order')
+            ->defaultSort('sort_order')
+            ->columns([
+                Tables\Columns\TextColumn::make('name')->searchable()->weight('medium'),
+                Tables\Columns\TextColumn::make('slug')->color('gray'),
+                Tables\Columns\TextColumn::make(static::$countRelation.'_count')->counts(static::$countRelation)->label(Str::headline(static::$countRelation))->alignCenter(),
+                Tables\Columns\ToggleColumn::make('is_active')->label('Visible'),
+            ])
+            ->actions([
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make(),
+            ]);
+    }
+}

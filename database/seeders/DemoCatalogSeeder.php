@@ -22,8 +22,8 @@ class DemoCatalogSeeder extends Seeder
         ['DECK-002', 'Slow Burn', DeckSegment::LightIgnition, 2, 'anticipation, touch, patience'],
         ['DECK-020', 'After Midnight', DeckSegment::MediumSpice, 2, 'secrets, candlelight, daring honesty'],
         ['DECK-021', 'Velvet Rope', DeckSegment::MediumSpice, 3, 'play, trust, role reversal'],
-        ['DECK-040', 'Behind Closed Doors', DeckSegment::AdvancedTaboo, 3, 'fantasy, boundaries, negotiation'],
-        ['DECK-041', 'The Ledger', DeckSegment::AdvancedTaboo, 4, 'dares, power, aftercare'],
+        ['DECK-040', 'Behind Closed Doors', DeckSegment::Advanced, 3, 'fantasy, boundaries, negotiation'],
+        ['DECK-041', 'The Ledger', DeckSegment::Advanced, 4, 'dares, power, aftercare'],
     ];
 
     private const SETTINGS = [

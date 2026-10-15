@@ -28,8 +28,9 @@ return [
         'url' => rtrim((string) env('FRONTEND_URL', 'https://provokenow.com'), '/'),
         'paths' => [
             'deck' => '/decks/{code}',
-            'product' => '/shop/{slug}',
-            'library_deck' => '/library/{code}',
+            'product' => '/store/{slug}',
+            // Signed-in reading view for an owned deck (linked from order emails).
+            'library_deck' => '/decks/{code}/play',
         ],
     ],
 
@@ -42,7 +43,7 @@ return [
         'static_pages' => [
             ['/', 'daily', '1.0'],
             ['/decks', 'daily', '0.9'],
-            ['/shop', 'daily', '0.9'],
+            ['/store', 'daily', '0.9'],
             ['/about', 'monthly', '0.5'],
             ['/faq', 'monthly', '0.5'],
         ],
@@ -81,7 +82,7 @@ return [
     'vault' => [
         // Deck segments whose cards stay hidden until the vault is unlocked
         // (only for users who have set a vault passcode).
-        'protected_segments' => ['Advanced_Taboo'],
+        'protected_segments' => ['Taboo'],
         'unlock_ttl_minutes' => (int) env('VAULT_UNLOCK_TTL_MINUTES', 15),
     ],
 

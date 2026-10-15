@@ -127,7 +127,7 @@ class SchemaGeneratorService
             $this->product($product),
             $this->breadcrumbs([
                 ['Home', FrontendUrl::to('/')],
-                ['Shop', FrontendUrl::to('/shop')],
+                ['Store', FrontendUrl::to('/store')],
                 [$product->name, $url],
             ]),
         ]);

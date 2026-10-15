@@ -185,7 +185,7 @@ class OrderMarketingEventsTest extends TestCase
         $this->assertSame('brevo-key', $request->header('api-key')[0]);
         $this->assertSame('Ava.Doe@Example.com', $request['to'][0]['email']);
         $this->assertSame("Your PROVOKE NOW order {$order->order_number} is confirmed", $request['subject']);
-        $this->assertStringContainsString('https://provokenow.com/library/deck-010', $request['htmlContent']);
+        $this->assertStringContainsString('https://provokenow.com/decks/deck-010/play', $request['htmlContent']);
         $this->assertArrayHasKey("order_confirmation:{$orderId}", $order->metadata['emails_sent']);
     }
 

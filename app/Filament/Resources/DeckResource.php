@@ -57,6 +57,14 @@ class DeckResource extends Resource
                         ->rows(2)
                         ->helperText('Comma-separated, e.g. "anticipation, trust, role play".')
                         ->columnSpanFull(),
+                    Select::make('categories')
+                        ->label('Fantasy categories')
+                        ->relationship('categories', 'name', fn ($query) => $query->orderBy('sort_order'))
+                        ->multiple()
+                        ->preload()
+                        ->searchable()
+                        ->helperText('Used by the category filter on /decks. Manage the list under Catalog → Deck Categories.')
+                        ->columnSpanFull(),
                     Toggle::make('is_active')
                         ->label('Active (visible in the catalogue)')
                         ->default(false),
@@ -110,7 +118,8 @@ class DeckResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('deck_code')->label('Code')->searchable()->sortable()->weight('bold'),
                 Tables\Columns\TextColumn::make('title')->searchable()->limit(40),
-                Tables\Columns\TextColumn::make('segment')->badge()->sortable(),
+                Tables\Columns\TextColumn::make('segment')->label('Level')->badge()->sortable(),
+                Tables\Columns\TextColumn::make('categories.name')->label('Categories')->badge()->color('gray')->limitList(3)->toggleable(),
                 Tables\Columns\TextColumn::make('intensity_level')->label('Intensity')->sortable()->alignCenter()
                     ->formatStateUsing(fn (int $state) => str_repeat('●', $state).str_repeat('○', 4 - $state)),
                 Tables\Columns\ToggleColumn::make('is_active')->label('Active'),
@@ -120,7 +129,8 @@ class DeckResource extends Resource
                 Tables\Columns\TextColumn::make('updated_at')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('segment')->options(DeckSegment::class),
+                Tables\Filters\SelectFilter::make('segment')->label('Level')->options(DeckSegment::class),
+                Tables\Filters\SelectFilter::make('categories')->relationship('categories', 'name')->multiple()->preload(),
                 Tables\Filters\SelectFilter::make('intensity_level')->options([1 => '1', 2 => '2', 3 => '3', 4 => '4']),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
             ])

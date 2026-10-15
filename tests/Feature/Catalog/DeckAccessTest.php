@@ -75,18 +75,18 @@ class DeckAccessTest extends TestCase
     public function test_index_lists_active_decks_without_card_payloads(): void
     {
         Deck::factory()->inactive()->create(['deck_code' => 'DECK-002']);
-        Deck::factory()->segment(DeckSegment::AdvancedTaboo, 4)->create(['deck_code' => 'DECK-003']);
+        Deck::factory()->segment(DeckSegment::Taboo, 4)->create(['deck_code' => 'DECK-003']);
 
         $response = $this->getJson('/api/v1/decks')
             ->assertOk()
             ->assertJsonPath('data.pagination.total', 2)
             ->assertJsonPath('data.items.0.deck_code', 'DECK-001')
-            ->assertJsonPath('data.items.1.segment', 'Advanced_Taboo')
+            ->assertJsonPath('data.items.1.segment', 'Taboo')
             ->assertJsonPath('data.items.1.vault_protected', true)
             ->assertJsonStructure(['data' => ['items' => [['id', 'deck_code', 'title', 'segment', 'intensity_level', 'core_theme', 'pod_card_box_theme']]]]);
 
         $this->assertStringNotContainsString('content', $response->getContent());
-        $this->getJson('/api/v1/decks?segment=Advanced_Taboo')->assertJsonPath('data.pagination.total', 1);
+        $this->getJson('/api/v1/decks?segment=Taboo')->assertJsonPath('data.pagination.total', 1);
         $this->getJson('/api/v1/decks/DECK-002')->assertNotFound()->assertJsonPath('success', false);
         $this->getJson('/api/v1/products/missing')->assertNotFound()->assertJsonPath('message', 'Resource not found.');
     }
@@ -111,7 +111,7 @@ class DeckAccessTest extends TestCase
 
     public function test_vault_passcode_gates_protected_decks_until_verified(): void
     {
-        $deck = Deck::factory()->segment(DeckSegment::AdvancedTaboo, 4)->withCards(3)->create(['deck_code' => 'DECK-050']);
+        $deck = Deck::factory()->segment(DeckSegment::Taboo, 4)->withCards(3)->create(['deck_code' => 'DECK-050']);
         $user = User::factory()->create(['password' => 'Account-Pass-1']);
         $user->profile()->create();
         $user->entitlements()->create(['deck_id' => $deck->id, 'granted_at' => now()]);

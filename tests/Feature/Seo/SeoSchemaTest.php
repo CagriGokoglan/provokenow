@@ -35,7 +35,7 @@ class SeoSchemaTest extends TestCase
 
         $this->assertSame('Velvet Hours Box Edition | PROVOKE NOW', $data['seo']['title']);
         $this->assertLessThanOrEqual(155, mb_strlen($data['seo']['description']));
-        $this->assertSame('https://provokenow.com/shop/velvet-hours-box', $data['seo']['canonical_url']);
+        $this->assertSame('https://provokenow.com/store/velvet-hours-box', $data['seo']['canonical_url']);
         $this->assertSame('https://cdn.provokenow.com/p/velvet.jpg', $data['seo']['og']['image']);
         $this->assertSame('summary_large_image', $data['seo']['twitter']['card']);
 
@@ -50,7 +50,7 @@ class SeoSchemaTest extends TestCase
         $this->assertSame('https://schema.org/InStock', $productNode['offers']['availability']);
 
         $crumbs = $this->node($schema, 'BreadcrumbList')['itemListElement'];
-        $this->assertSame(['Home', 'Shop', 'Velvet Hours Box Edition'], array_column($crumbs, 'name'));
+        $this->assertSame(['Home', 'Store', 'Velvet Hours Box Edition'], array_column($crumbs, 'name'));
         $this->assertSame([1, 2, 3], array_column($crumbs, 'position'));
     }
 
@@ -65,7 +65,7 @@ class SeoSchemaTest extends TestCase
             'slug' => 'oil',
             'meta_title' => 'Warming Massage Oil',
             'meta_description' => 'Custom description.',
-            'canonical_url' => 'https://provokenow.com/shop/massage-oil',
+            'canonical_url' => 'https://provokenow.com/store/massage-oil',
             'og_image' => 'https://cdn.provokenow.com/og/oil.jpg',
         ]);
 
@@ -78,7 +78,7 @@ class SeoSchemaTest extends TestCase
         $custom = $this->getJson('/api/v1/products/oil')->json('data.seo');
         $this->assertSame('Warming Massage Oil', $custom['title']);
         $this->assertSame('Custom description.', $custom['description']);
-        $this->assertSame('https://provokenow.com/shop/massage-oil', $custom['canonical_url']);
+        $this->assertSame('https://provokenow.com/store/massage-oil', $custom['canonical_url']);
         $this->assertSame('https://cdn.provokenow.com/og/oil.jpg', $custom['og']['image']);
     }
 

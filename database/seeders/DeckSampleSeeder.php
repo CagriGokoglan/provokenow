@@ -47,20 +47,21 @@ class DeckSampleSeeder extends Seeder
     }
 
     /**
-     * Placeholder split, proportional to DECK_COUNT: first 30% Light Ignition (1–2),
-     * next 40% Medium Spice (2–3), last 30% Advanced Taboo (3–4). Real values are set per deck.
+     * Placeholder split, proportional to DECK_COUNT: four equal bands, one per level,
+     * intensity matching the level (1–4). Real values are set per deck.
      *
      * @return array{DeckSegment, int}
      */
     private function tier(int $n): array
     {
-        $p = $n / self::DECK_COUNT;
-
-        return match (true) {
-            $p <= 0.30 => [DeckSegment::LightIgnition, $p <= 0.15 ? 1 : 2],
-            $p <= 0.70 => [DeckSegment::MediumSpice, $p <= 0.50 ? 2 : 3],
-            default => [DeckSegment::AdvancedTaboo, $p <= 0.85 ? 3 : 4],
+        $segment = match (true) {
+            $n / self::DECK_COUNT <= 0.25 => DeckSegment::LightIgnition,
+            $n / self::DECK_COUNT <= 0.50 => DeckSegment::MediumSpice,
+            $n / self::DECK_COUNT <= 0.75 => DeckSegment::Advanced,
+            default => DeckSegment::Taboo,
         };
+
+        return [$segment, $segment->rank()];
     }
 
     private function seedCards(Deck $deck): void
