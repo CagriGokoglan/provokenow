@@ -42,8 +42,8 @@ class DeckResource extends Resource
                     TextInput::make('deck_code')
                         ->required()
                         ->maxLength(20)
-                        ->regex('/^DECK-\d{3}$/i')
-                        ->validationMessages(['regex' => 'Use the format DECK-001.'])
+                        ->regex('/^DECK-\d{3,}$/i')
+                        ->validationMessages(['regex' => 'Use the format DECK-001 (at least three digits, e.g. DECK-1000).'])
                         ->unique(ignoreRecord: true)
                         ->dehydrateStateUsing(fn (string $state) => strtoupper($state))
                         ->placeholder('DECK-001'),

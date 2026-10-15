@@ -91,6 +91,24 @@ class DeckAccessTest extends TestCase
         $this->getJson('/api/v1/products/missing')->assertNotFound()->assertJsonPath('message', 'Resource not found.');
     }
 
+    public function test_catalogue_has_no_deck_cap_and_pages_through_every_deck(): void
+    {
+        foreach (range(2, 150) as $n) {
+            Deck::factory()->create(['deck_code' => sprintf('DECK-%03d', $n)]);
+        }
+
+        $first = $this->getJson('/api/v1/decks?per_page=100')
+            ->assertOk()
+            ->assertJsonPath('data.pagination.total', 150)
+            ->assertJsonPath('data.pagination.last_page', 2)
+            ->assertJsonCount(100, 'data.items');
+        $second = $this->getJson('/api/v1/decks?per_page=100&page=2')->assertJsonCount(50, 'data.items');
+
+        $codes = collect([...$first->json('data.items'), ...$second->json('data.items')])->pluck('deck_code');
+        $this->assertSame(150, $codes->unique()->count());
+        $this->assertContains('DECK-150', $codes);
+    }
+
     public function test_vault_passcode_gates_protected_decks_until_verified(): void
     {
         $deck = Deck::factory()->segment(DeckSegment::AdvancedTaboo, 4)->withCards(3)->create(['deck_code' => 'DECK-050']);

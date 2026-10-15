@@ -9,14 +9,14 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
- * Seeds the catalogue skeleton DECK-001 … DECK-050, each with 50 placeholder cards.
+ * Seeds the catalogue skeleton DECK-001 … DECK-100 (DECK_COUNT), each with 50 placeholder cards.
  *
  * Idempotent: re-running updates deck metadata in place and never overwrites card
  * content that has since been replaced with real copy.
  */
 class DeckSampleSeeder extends Seeder
 {
-    public const DECK_COUNT = 50;
+    public const DECK_COUNT = 100;
 
     public const CARDS_PER_DECK = 50;
 
@@ -47,16 +47,19 @@ class DeckSampleSeeder extends Seeder
     }
 
     /**
-     * 001–015 Light Ignition (1–2), 016–035 Medium Spice (2–3), 036–050 Advanced Taboo (3–4).
+     * Placeholder split, proportional to DECK_COUNT: first 30% Light Ignition (1–2),
+     * next 40% Medium Spice (2–3), last 30% Advanced Taboo (3–4). Real values are set per deck.
      *
      * @return array{DeckSegment, int}
      */
     private function tier(int $n): array
     {
+        $p = $n / self::DECK_COUNT;
+
         return match (true) {
-            $n <= 15 => [DeckSegment::LightIgnition, $n <= 8 ? 1 : 2],
-            $n <= 35 => [DeckSegment::MediumSpice, $n <= 25 ? 2 : 3],
-            default => [DeckSegment::AdvancedTaboo, $n <= 43 ? 3 : 4],
+            $p <= 0.30 => [DeckSegment::LightIgnition, $p <= 0.15 ? 1 : 2],
+            $p <= 0.70 => [DeckSegment::MediumSpice, $p <= 0.50 ? 2 : 3],
+            default => [DeckSegment::AdvancedTaboo, $p <= 0.85 ? 3 : 4],
         };
     }
 

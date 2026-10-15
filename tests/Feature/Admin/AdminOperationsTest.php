@@ -86,6 +86,20 @@ class AdminOperationsTest extends TestCase
         $this->assertSame('DECK-031-C03', $deck->cards()->firstWhere('card_number', 3)->content_payload['Card_ID']);
     }
 
+    public function test_deck_codes_are_not_capped_at_three_digits(): void
+    {
+        Livewire::test(CreateDeck::class)
+            ->fillForm(['deck_code' => 'deck-1000', 'title' => 'Deck One Thousand', 'segment' => 'Light_Ignition', 'intensity_level' => 1])
+            ->call('create')
+            ->assertHasNoFormErrors();
+        $this->assertTrue(Deck::where('deck_code', 'DECK-1000')->exists());
+
+        Livewire::test(CreateDeck::class)
+            ->fillForm(['deck_code' => 'DECK-12', 'title' => 'Too short', 'segment' => 'Light_Ignition', 'intensity_level' => 1])
+            ->call('create')
+            ->assertHasFormErrors(['deck_code' => 'regex']);
+    }
+
     public function test_invalid_card_import_is_rejected_without_changes(): void
     {
         $deck = Deck::factory()->create();
