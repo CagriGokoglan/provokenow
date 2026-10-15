@@ -102,7 +102,7 @@ class HeroSlideResource extends Resource
                     ->required(fn (Get $get) => $get('target_type') === HeroSlide::TARGET_PRODUCT),
                 TextInput::make('custom_url')
                     ->label('URL')
-                    ->placeholder('/store?category=heels')
+                    ->placeholder('/store/heels')
                     ->maxLength(255)
                     ->regex('#^(/[^\s]*|https://[^\s]+)$#')
                     ->validationMessages(['regex' => 'Use a site path like /store or a full https:// link.'])

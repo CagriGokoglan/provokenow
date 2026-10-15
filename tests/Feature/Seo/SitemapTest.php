@@ -4,6 +4,7 @@ namespace Tests\Feature\Seo;
 
 use App\Models\Deck;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,6 +20,8 @@ class SitemapTest extends TestCase
         Deck::factory()->inactive()->create(['deck_code' => 'DECK-002']);
         Product::factory()->accessory()->create(['slug' => 'silk-blindfold', 'og_image' => 'https://cdn.provokenow.com/og/silk.jpg']);
         Product::factory()->inactive()->create(['slug' => 'retired-product']);
+        ProductCategory::factory()->create(['slug' => 'heels']);
+        ProductCategory::factory()->create(['slug' => 'hidden-category', 'is_active' => false]);
 
         // A misconfigured private page must still be filtered out.
         config(['provoke.seo.static_pages' => [
@@ -49,11 +52,16 @@ class SitemapTest extends TestCase
         $this->assertEqualsCanonicalizing([
             'https://provokenow.com/',
             'https://provokenow.com/decks',
+            'https://provokenow.com/decks/light-ignition',
+            'https://provokenow.com/decks/medium-spice',
+            'https://provokenow.com/decks/advanced',
+            'https://provokenow.com/decks/taboo',
             'https://provokenow.com/decks/deck-001',
+            'https://provokenow.com/store/heels',
             'https://provokenow.com/store/silk-blindfold',
         ], $locs);
 
-        foreach (['/vault', '/checkout', '/user', '/cart', 'deck-002', 'retired-product', '/api/'] as $forbidden) {
+        foreach (['/vault', '/checkout', '/user', '/cart', 'deck-002', 'retired-product', 'hidden-category', '/api/', '?level=', '?category='] as $forbidden) {
             $this->assertStringNotContainsString($forbidden, $response->getContent());
         }
 
@@ -65,7 +73,7 @@ class SitemapTest extends TestCase
         $path = tempnam(sys_get_temp_dir(), 'sitemap');
 
         $this->artisan('provoke:sitemap', ['--path' => $path])
-            ->expectsOutputToContain('4 URLs')
+            ->expectsOutputToContain('9 URLs')
             ->assertSuccessful();
 
         $xml = file_get_contents($path);

@@ -17,7 +17,7 @@ class HeroSlideSeeder extends Seeder
         ['Conversation card decks for couples', 'Intimacy, by design.', 'Fifty cards to slow the evening down: scenes to set, questions to ask, invitations to accept — or gently decline.', 'Explore the decks', '/decks'],
         ['Digital Decks', 'Uncover Unfiltered Desires', 'Dive into our exclusive digital card decks designed for deep connection and provocative gameplay.', 'Explore Decks', '/decks'],
         ['Store Products', 'Sensual Luxury & Apparel', 'Discover our curated collection of luxury lingerie, BDSM tools, and adult accessories.', 'Shop Collection', '/store'],
-        ['Physical Boxed Games', 'Premium Printed Game Boxes', 'Tactile elegance for intimate nights. Experience our physical luxury boxed game sets.', 'Order Boxed Games', '/store?category=printed-game-boxes'],
+        ['Physical Boxed Games', 'Premium Printed Game Boxes', 'Tactile elegance for intimate nights. Experience our physical luxury boxed game sets.', 'Order Boxed Games', '/store/printed-game-boxes'],
     ];
 
     public function run(): void

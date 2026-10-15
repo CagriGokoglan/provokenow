@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Enums\UserRole;
 use App\Filament\Pages\SiteSettings;
 use App\Filament\Resources\HeroSlideResource\Pages\CreateHeroSlide;
+use App\Filament\Resources\ProductCategoryResource\Pages\ManageProductCategories;
 use App\Filament\Resources\ProductResource\Pages\EditProduct;
 use App\Models\Deck;
 use App\Models\HeroSlide;
@@ -89,6 +90,22 @@ class HomepageAdminTest extends TestCase
             ->assertHasNoFormErrors();
         $film = HeroSlide::firstWhere('title', 'Film');
         $this->assertSame([4, 0], [$film->video_start, $film->video_end_trim], 'An empty trim box means no trim.');
+    }
+
+    public function test_store_category_and_product_slugs_cannot_collide(): void
+    {
+        Product::factory()->accessory()->create(['slug' => 'heels']);
+        $category = ProductCategory::factory()->create(['slug' => 'dice']);
+        $product = Product::factory()->accessory()->create(['slug' => 'lucky-dice']);
+
+        Livewire::test(ManageProductCategories::class)
+            ->callAction('create', ['name' => 'Heels', 'slug' => 'heels'])
+            ->assertHasActionErrors(['slug']);
+
+        Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
+            ->fillForm(['slug' => $category->slug])
+            ->call('save')
+            ->assertHasFormErrors(['slug']);
     }
 
     public function test_product_category_and_showcase_flags_are_saved(): void

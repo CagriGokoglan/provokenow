@@ -5,7 +5,7 @@ namespace App\Enums;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasLabel;
 
-/** The four intensity levels decks are browsed by (/decks?level=…). */
+/** The four intensity levels decks are browsed by (/decks/{level}, e.g. /decks/taboo). */
 enum DeckSegment: string implements HasColor, HasLabel
 {
     case LightIgnition = 'Light_Ignition';

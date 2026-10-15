@@ -85,7 +85,7 @@ class HomepageTest extends TestCase
 
         $slides = $this->getJson('/api/v1/home')->json('data.hero_slides');
         $this->assertSame(array_column(HeroSlideSeeder::SLIDES, 1), array_column($slides, 'title'));
-        $this->assertSame('/store?category=printed-game-boxes', $slides[3]['href']);
+        $this->assertSame('/store/printed-game-boxes', $slides[3]['href']);
         $this->assertSame('Order Boxed Games', $slides[3]['cta_label']);
 
         // An admin who deleted slides doesn't get them back on a re-run.

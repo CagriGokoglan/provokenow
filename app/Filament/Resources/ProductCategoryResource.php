@@ -14,6 +14,8 @@ class ProductCategoryResource extends TaxonomyResource
 
     protected static bool $footerToggle = true;
 
+    protected static bool $storePath = true;
+
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
     protected static ?string $navigationGroup = 'Catalog';

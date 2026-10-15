@@ -8,6 +8,8 @@ use App\Filament\Resources\ProductResource\Pages;
 use App\Filament\Support\Fields;
 use App\Models\Deck;
 use App\Models\Product;
+use App\Models\ProductCategory;
+use Closure;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
@@ -57,7 +59,12 @@ class ProductResource extends Resource
                         ->maxLength(255)
                         ->alphaDash()
                         ->unique(ignoreRecord: true)
-                        ->prefix('/shop/'),
+                        ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail) {
+                            if (ProductCategory::where('slug', $value)->exists()) {
+                                $fail('A store category already uses this slug, so /store/'.$value.' would be ambiguous. Choose another.');
+                            }
+                        })
+                        ->prefix('/store/'),
                     TextInput::make('sku')->label('SKU')->required()->maxLength(64)->unique(ignoreRecord: true),
                     Select::make('product_type')->options(ProductType::class)->required()->native(false)->live(),
                     Textarea::make('description')->rows(5)->columnSpanFull(),

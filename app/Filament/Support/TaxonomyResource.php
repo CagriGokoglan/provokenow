@@ -2,6 +2,8 @@
 
 namespace App\Filament\Support;
 
+use App\Models\Product;
+use Closure;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
@@ -20,6 +22,9 @@ abstract class TaxonomyResource extends Resource
     /** Store categories can be listed in the footer's Explore column. */
     protected static bool $footerToggle = false;
 
+    /** Store categories live at /store/{slug}, the same path space as products. */
+    protected static bool $storePath = false;
+
     public static function form(Form $form): Form
     {
         return $form->columns(2)->schema([
@@ -33,7 +38,12 @@ abstract class TaxonomyResource extends Resource
                 ->maxLength(80)
                 ->alphaDash()
                 ->unique(ignoreRecord: true)
-                ->helperText('Used in URLs, e.g. /decks?category=roleplay'),
+                ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail) {
+                    if (static::$storePath && Product::where('slug', $value)->exists()) {
+                        $fail('A product already uses this slug, so /store/'.$value.' would be ambiguous. Choose another.');
+                    }
+                })
+                ->helperText(static::$storePath ? 'Used in the URL, e.g. /store/heels' : 'Used in URLs, e.g. /decks?category=roleplay'),
             TextInput::make('description')->maxLength(255)->columnSpanFull(),
             TextInput::make('sort_order')->numeric()->integer()->minValue(0)->default(0),
             Toggle::make('is_active')->label('Visible on the site')->default(true)->inline(false),

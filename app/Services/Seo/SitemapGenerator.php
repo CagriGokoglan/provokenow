@@ -2,8 +2,10 @@
 
 namespace App\Services\Seo;
 
+use App\Enums\DeckSegment;
 use App\Models\Deck;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Support\FrontendUrl;
 use Illuminate\Support\Str;
 use XMLWriter;
@@ -52,6 +54,19 @@ class SitemapGenerator
     {
         foreach (config('provoke.seo.static_pages') as [$path, $changefreq, $priority]) {
             yield ['loc' => FrontendUrl::to($path), 'changefreq' => $changefreq, 'priority' => $priority];
+        }
+
+        foreach (DeckSegment::cases() as $level) {
+            yield ['loc' => FrontendUrl::deckLevel($level), 'changefreq' => 'daily', 'priority' => '0.8'];
+        }
+
+        foreach (ProductCategory::active()->orderBy('sort_order')->cursor() as $category) {
+            yield [
+                'loc' => FrontendUrl::storeCategory($category),
+                'lastmod' => $category->updated_at?->toAtomString(),
+                'changefreq' => 'daily',
+                'priority' => '0.8',
+            ];
         }
 
         foreach (Deck::active()->orderBy('deck_code')->cursor() as $deck) {

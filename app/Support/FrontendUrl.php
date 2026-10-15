@@ -2,8 +2,10 @@
 
 namespace App\Support;
 
+use App\Enums\DeckSegment;
 use App\Models\Deck;
 use App\Models\Product;
+use App\Models\ProductCategory;
 
 /** Absolute URLs on the public Next.js site (provoke.frontend). */
 final class FrontendUrl
@@ -27,6 +29,16 @@ final class FrontendUrl
     public static function libraryDeck(Deck $deck): string
     {
         return self::path('library_deck', ['{code}' => strtolower($deck->deck_code)]);
+    }
+
+    public static function deckLevel(DeckSegment $level): string
+    {
+        return self::path('deck_level', ['{level}' => $level->slug()]);
+    }
+
+    public static function storeCategory(ProductCategory $category): string
+    {
+        return self::path('store_category', ['{slug}' => $category->slug]);
     }
 
     /** @param array<string, string> $replace */

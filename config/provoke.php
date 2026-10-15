@@ -29,6 +29,9 @@ return [
         'paths' => [
             'deck' => '/decks/{code}',
             'product' => '/store/{slug}',
+            // Clean listing URLs: an intensity level and a store category.
+            'deck_level' => '/decks/{level}',
+            'store_category' => '/store/{slug}',
             // Signed-in reading view for an owned deck (linked from order emails).
             'library_deck' => '/decks/{code}/play',
         ],
