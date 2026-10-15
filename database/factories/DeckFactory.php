@@ -20,9 +20,6 @@ class DeckFactory extends Factory
             'segment' => DeckSegment::LightIgnition,
             'intensity_level' => 1,
             'core_theme_keywords' => 'connection, playfulness, trust',
-            'ai_system_role_prompt' => 'Internal prompt.',
-            'pod_card_box_theme' => 'noir-gold',
-            'digital_delivery_file_name' => 'deck.pdf',
             'is_active' => true,
         ];
     }

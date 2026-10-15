@@ -81,14 +81,6 @@ class DeckResource extends Resource
                         ->acceptedFileTypes(['image/svg+xml', 'image/webp', 'image/png', 'image/jpeg'])
                         ->disk('public')->directory('decks/artwork')->visibility('public')->maxSize(2048),
                 ]),
-                Tab::make('AI & Production')->icon('heroicon-o-cpu-chip')->schema([
-                    Textarea::make('ai_system_role_prompt')
-                        ->label('AI system role prompt')
-                        ->rows(12)
-                        ->helperText('Internal only — never returned by the public API.'),
-                    TextInput::make('pod_card_box_theme')->label('POD box theme')->maxLength(255),
-                    TextInput::make('digital_delivery_file_name')->maxLength(255)->placeholder('DECK-001.pdf'),
-                ]),
                 Fields::seoTab('seo/decks', [
                     Section::make('FAQ for answer engines')
                         ->description('Shown in FAQPage structured data. Never paste paid card content here.')

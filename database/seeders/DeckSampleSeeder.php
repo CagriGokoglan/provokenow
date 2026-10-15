@@ -32,10 +32,6 @@ class DeckSampleSeeder extends Seeder
                     'segment' => $segment,
                     'intensity_level' => $intensity,
                     'core_theme_keywords' => 'placeholder, theme, keywords',
-                    'ai_system_role_prompt' => "You are the in-app guide for {$code}. Keep every suggestion consensual, "
-                        .'respectful and aligned with the deck\'s intensity level. [Placeholder — replace with final prompt]',
-                    'pod_card_box_theme' => Str::slug($segment->value).'-box',
-                    'digital_delivery_file_name' => "{$code}.pdf",
                     'is_active' => false, // Activate once real content is loaded.
                 ]);
 

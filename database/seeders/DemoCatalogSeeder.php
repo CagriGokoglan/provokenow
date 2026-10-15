@@ -69,8 +69,6 @@ class DemoCatalogSeeder extends Seeder
                 'segment' => $segment,
                 'intensity_level' => $intensity,
                 'core_theme_keywords' => $themes,
-                'pod_card_box_theme' => 'velvet-gold',
-                'digital_delivery_file_name' => "{$code}.pdf",
                 'is_active' => true,
             ]);
 

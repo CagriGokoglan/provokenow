@@ -38,7 +38,7 @@ class DeckController extends Controller
 
         // Metadata columns only: no cards, no AI prompt.
         $decks = Deck::active()
-            ->select(['id', 'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'pod_card_box_theme', 'card_front_bg_url', 'card_back_bg_url'])
+            ->select(['id', 'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'card_front_bg_url', 'card_back_bg_url'])
             ->with(['categories' => fn ($q) => $q->active()->select('deck_categories.id', 'name', 'slug')])
             ->when($filters['segment'] ?? null, fn ($q, $segment) => $q->where('segment', $segment))
             ->when($filters['level'] ?? null, fn ($q, $level) => $q->where('segment', DeckSegment::fromSlug($level)->value))

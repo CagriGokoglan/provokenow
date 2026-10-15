@@ -7,7 +7,6 @@ use App\Models\Concerns\FlushesFrontendCache;
 use App\Support\MediaUrl;
 use App\Support\SvgSanitizer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -18,11 +17,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords',
-    'ai_system_role_prompt', 'pod_card_box_theme', 'digital_delivery_file_name', 'is_active',
+    'is_active',
     'meta_title', 'meta_description', 'canonical_url', 'og_image', 'seo_faq',
     'card_front_bg_url', 'card_back_bg_url',
 ])]
-#[Hidden(['ai_system_role_prompt'])]
 class Deck extends Model
 {
     use FlushesFrontendCache, HasFactory, HasUuids;

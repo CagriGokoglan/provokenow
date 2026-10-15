@@ -34,7 +34,6 @@ class DeckAccessTest extends TestCase
             ->assertJsonPath('data.cards.0.card_number', 1);
 
         $this->assertStringNotContainsString('"Card 2"', $response->getContent());
-        $this->assertStringNotContainsString('ai_system_role_prompt', $response->getContent());
     }
 
     public function test_authenticated_user_without_entitlement_sees_preview_only(): void
@@ -83,7 +82,7 @@ class DeckAccessTest extends TestCase
             ->assertJsonPath('data.items.0.deck_code', 'DECK-001')
             ->assertJsonPath('data.items.1.segment', 'Taboo')
             ->assertJsonPath('data.items.1.vault_protected', true)
-            ->assertJsonStructure(['data' => ['items' => [['id', 'deck_code', 'title', 'segment', 'intensity_level', 'core_theme', 'pod_card_box_theme']]]]);
+            ->assertJsonStructure(['data' => ['items' => [['id', 'deck_code', 'title', 'segment', 'intensity_level', 'core_theme']]]]);
 
         $this->assertStringNotContainsString('content', $response->getContent());
         $this->getJson('/api/v1/decks?segment=Taboo')->assertJsonPath('data.pagination.total', 1);
