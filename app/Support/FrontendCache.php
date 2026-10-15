@@ -16,6 +16,9 @@ final class FrontendCache
 {
     public static function flush(): void
     {
+        // The API's own cached catalogue responses go first, so the web app refetches fresh data.
+        ResponseCache::flush();
+
         $url = config('provoke.frontend.revalidate_url');
         $secret = config('provoke.frontend.revalidate_secret');
 

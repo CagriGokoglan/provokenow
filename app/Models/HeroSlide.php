@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\FlushesFrontendCache;
+use App\Models\Concerns\OptimizesImages;
+use App\Services\Media\ImageOptimizer;
 use App\Support\FrontendUrl;
 use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -18,7 +20,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class HeroSlide extends Model
 {
-    use FlushesFrontendCache, HasUuids;
+    use FlushesFrontendCache, HasUuids, OptimizesImages;
+
+    /** Uploaded images re-encoded in the background (see OptimizesImages). */
+    public function imageFields(): array
+    {
+        return ['image' => ImageOptimizer::PROFILE_WEB, 'image_mobile' => ImageOptimizer::PROFILE_WEB];
+    }
 
     public const TARGET_DECK = 'deck';
 

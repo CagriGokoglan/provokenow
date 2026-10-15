@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CachePublicResponse;
 use App\Http\Middleware\EnsureUserIsStaff;
 use App\Support\ApiResponse;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'staff' => EnsureUserIsStaff::class,
+            'cache.public' => CachePublicResponse::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

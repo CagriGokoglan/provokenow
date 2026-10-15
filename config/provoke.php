@@ -41,6 +41,17 @@ return [
         'revalidate_secret' => env('FRONTEND_REVALIDATE_SECRET'),
     ],
 
+    /*
+    | Admin image uploads are re-encoded in the background (App\Jobs\OptimizeModelImages):
+    | WebP for site imagery, JPEG for social share images.
+    */
+    'images' => [
+        'quality' => (int) env('IMAGE_QUALITY', 82),
+        'max_dimension' => (int) env('IMAGE_MAX_DIMENSION', 2400),
+        'og_width' => 1200,
+        'og_quality' => 85,
+    ],
+
     'seo' => [
         'default_og_image' => env('SEO_DEFAULT_OG_IMAGE', 'https://provokenow.com/og/default.jpg'),
         'default_locale' => 'en',

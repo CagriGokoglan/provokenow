@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\DeckSegment;
 use App\Models\Concerns\FlushesFrontendCache;
+use App\Models\Concerns\OptimizesImages;
+use App\Services\Media\ImageOptimizer;
 use App\Support\MediaUrl;
 use App\Support\SvgSanitizer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -23,7 +25,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Deck extends Model
 {
-    use FlushesFrontendCache, HasFactory, HasUuids;
+    use FlushesFrontendCache, HasFactory, HasUuids, OptimizesImages;
+
+    /** Uploaded images re-encoded in the background (see OptimizesImages). */
+    public function imageFields(): array
+    {
+        return [
+            'card_front_bg_url' => ImageOptimizer::PROFILE_WEB,
+            'card_back_bg_url' => ImageOptimizer::PROFILE_WEB,
+            'og_image' => ImageOptimizer::PROFILE_OG,
+        ];
+    }
 
     protected function casts(): array
     {

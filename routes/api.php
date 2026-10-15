@@ -34,16 +34,20 @@ Route::prefix('v1')->name('v1.')->group(function () {
         });
     });
 
-    Route::get('config/public', PublicConfigController::class)->name('config.public');
-    Route::get('home', HomeController::class)->name('home');
-    Route::get('taxonomies', TaxonomyController::class)->name('taxonomies');
+    // Public catalogue reads: cached (busted on every content change).
+    Route::middleware('cache.public')->group(function () {
+        Route::get('config/public', PublicConfigController::class)->name('config.public');
+        Route::get('home', HomeController::class)->name('home');
+        Route::get('taxonomies', TaxonomyController::class)->name('taxonomies');
+        Route::get('decks', [DeckController::class, 'index'])->name('decks.index');
+        Route::get('products', [ProductController::class, 'index'])->name('products.index');
+        Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.show');
+    });
     Route::post('club/subscribe', [ClubController::class, 'subscribe'])->middleware('throttle:club')->name('club.subscribe');
 
     // Catalogue (public)
-    Route::get('decks', [DeckController::class, 'index'])->name('decks.index');
+    // Personalised (full cards for owners), so never cached.
     Route::get('decks/{deckCode}', [DeckController::class, 'show'])->name('decks.show');
-    Route::get('products', [ProductController::class, 'index'])->name('products.index');
-    Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.show');
 
     // Cart & checkout (guests via X-Cart-Token, or signed in)
     Route::prefix('cart')->name('cart.')->middleware('throttle:cart')->group(function () {

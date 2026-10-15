@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Enums\ProductType;
 use App\Models\Concerns\FlushesFrontendCache;
+use App\Models\Concerns\OptimizesImages;
+use App\Services\Media\ImageOptimizer;
 use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -23,7 +25,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Product extends Model
 {
-    use FlushesFrontendCache, HasFactory, HasUuids;
+    use FlushesFrontendCache, HasFactory, HasUuids, OptimizesImages;
+
+    /** Uploaded images re-encoded in the background (see OptimizesImages). */
+    public function imageFields(): array
+    {
+        return ['metadata.images' => ImageOptimizer::PROFILE_WEB, 'og_image' => ImageOptimizer::PROFILE_OG];
+    }
 
     public const UNLIMITED_STOCK = -1;
 
