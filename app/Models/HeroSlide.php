@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontendCache;
 use App\Support\FrontendUrl;
 use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -17,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class HeroSlide extends Model
 {
-    use HasUuids;
+    use FlushesFrontendCache, HasUuids;
 
     public const TARGET_DECK = 'deck';
 

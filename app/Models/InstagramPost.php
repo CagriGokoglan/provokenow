@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontendCache;
 use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 #[Fillable(['post_url', 'image', 'caption', 'sort_order', 'is_active'])]
 class InstagramPost extends Model
 {
-    use HasUuids;
+    use FlushesFrontendCache, HasUuids;
 
     public const HOMEPAGE_LIMIT = 3;
 

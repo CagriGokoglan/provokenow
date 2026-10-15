@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProductType;
+use App\Models\Concerns\FlushesFrontendCache;
 use App\Support\MediaUrl;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -22,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class Product extends Model
 {
-    use HasFactory, HasUuids;
+    use FlushesFrontendCache, HasFactory, HasUuids;
 
     public const UNLIMITED_STOCK = -1;
 

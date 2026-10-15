@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontendCache;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -15,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['deck_id', 'card_number', 'title', 'content_payload'])]
 class Card extends Model
 {
-    use HasFactory, HasUuids;
+    use FlushesFrontendCache, HasFactory, HasUuids;
 
     protected function casts(): array
     {

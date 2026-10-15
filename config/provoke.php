@@ -32,6 +32,10 @@ return [
             // Signed-in reading view for an owned deck (linked from order emails).
             'library_deck' => '/decks/{code}/play',
         ],
+        // Admin edits ping the web app to refresh its cache (shared secret; unset = off).
+        // On the VPS point it straight at the local Next.js process: http://127.0.0.1:3000/revalidate
+        'revalidate_url' => env('FRONTEND_REVALIDATE_URL', rtrim((string) env('FRONTEND_URL', 'https://provokenow.com'), '/').'/revalidate'),
+        'revalidate_secret' => env('FRONTEND_REVALIDATE_SECRET'),
     ],
 
     'seo' => [

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontendCache;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 #[Fillable(['product_id', 'upsell_product_id', 'discount_percent', 'sort_order'])]
 class ProductUpsell extends Model
 {
-    use HasUuids;
+    use FlushesFrontendCache, HasUuids;
 
     protected function casts(): array
     {

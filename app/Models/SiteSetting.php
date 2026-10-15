@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontendCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\Cache;
  */
 class SiteSetting extends Model
 {
+    use FlushesFrontendCache;
+
     protected $primaryKey = 'key';
 
     public $incrementing = false;

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FlushesFrontendCache;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['name', 'slug', 'description', 'sort_order', 'is_active', 'show_in_footer'])]
 class ProductCategory extends Model
 {
-    use HasFactory, HasUuids;
+    use FlushesFrontendCache, HasFactory, HasUuids;
 
     protected function casts(): array
     {

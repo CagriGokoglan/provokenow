@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\DeckSegment;
+use App\Models\Concerns\FlushesFrontendCache;
 use App\Support\MediaUrl;
 use App\Support\SvgSanitizer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -24,7 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Hidden(['ai_system_role_prompt'])]
 class Deck extends Model
 {
-    use HasFactory, HasUuids;
+    use FlushesFrontendCache, HasFactory, HasUuids;
 
     protected function casts(): array
     {
