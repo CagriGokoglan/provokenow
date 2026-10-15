@@ -6,8 +6,14 @@ use App\Enums\DeckSegment;
 use App\Enums\ProductType;
 use App\Models\Card;
 use App\Models\Deck;
+use App\Models\DeckCategory;
+use App\Models\HeroSlide;
+use App\Models\InstagramPost;
 use App\Models\Product;
+use App\Models\ProductCategory;
+use App\Models\SiteSetting;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 /**
@@ -100,6 +106,8 @@ class DemoCatalogSeeder extends Seeder
         $trilogy = $this->product('first-sparks-trilogy', 'First Sparks Trilogy', ProductType::Bundle, 4500, 'Three Light Ignition decks to begin with. Digital.', -1, null, false);
         $trilogy->decks()->syncWithoutDetaching([$decks['DECK-001']->id, $decks['DECK-002']->id]);
 
+        $this->seedHomepage($decks);
+
         $this->command?->info('Demo catalogue ready: '.count($decks).' decks, '.Product::count().' products.');
     }
 
@@ -117,6 +125,61 @@ class DemoCatalogSeeder extends Seeder
             'description' => $description,
             'metadata' => array_filter(['images' => [], 'upsell' => $upsell, 'requires_shipping' => $ships], fn ($v) => $v !== null),
         ]);
+    }
+
+    /** @param array<string, Deck> $decks */
+    private function seedHomepage(array $decks): void
+    {
+        $this->call(TaxonomySeeder::class);
+
+        $tags = DeckCategory::pluck('id', 'slug');
+        $decks['DECK-001']->categories()->syncWithoutDetaching([$tags['sensory']]);
+        $decks['DECK-020']->categories()->syncWithoutDetaching([$tags['roleplay'], $tags['sensory']]);
+        $decks['DECK-021']->categories()->syncWithoutDetaching([$tags['roleplay'], $tags['dominant-submissive']]);
+        $decks['DECK-040']->categories()->syncWithoutDetaching([$tags['bdsm'], $tags['dominant-submissive']]);
+        $decks['DECK-041']->update(['segment' => DeckSegment::Taboo, 'intensity_level' => 4]);
+        $decks['DECK-041']->categories()->syncWithoutDetaching([$tags['bdsm']]);
+
+        $cats = ProductCategory::pluck('id', 'slug');
+        Product::where('slug', 'silk-blindfold')->update(['product_category_id' => $cats['bdsm-tools-costumes'], 'is_featured' => true, 'is_new_arrival' => true]);
+        Product::where('slug', 'massage-candle')->update(['product_category_id' => $cats['sex-toys'], 'is_featured' => true]);
+        Product::where('slug', 'like', 'box-%')->update(['is_boxed_game' => true, 'is_featured' => true]);
+        foreach ([['velvet-dice', 'Velvet Dice', 'dice', 1800], ['lace-bodysuit', 'Lace Bodysuit', 'lingerie-underwear', 8900], ['patent-stilettos', 'Patent Stilettos', 'heels', 14500], ['satin-robe', 'Satin Robe', 'apparel-outerwear', 11000]] as [$slug, $name, $cat, $price]) {
+            $p = $this->product($slug, $name, ProductType::PhysicalAccessory, $price, "Sample {$name} for local development.", 20);
+            $p->update(['product_category_id' => $cats[$cat], 'is_new_arrival' => true]);
+        }
+
+        $disk = Storage::disk('public');
+        $art = fn (string $path, int $w, int $h, array $from, array $to) => $disk->exists($path) ? $path : tap($path, fn () => $disk->put($path, $this->gradientJpeg($w, $h, $from, $to)));
+
+        HeroSlide::query()->delete();
+        HeroSlide::create(['eyebrow' => 'New deck', 'title' => 'After Midnight', 'subtitle' => 'Secrets, candlelight and daring honesty.', 'image' => $art('home/demo/hero-1.jpg', 2400, 1200, [58, 18, 44], [12, 6, 10]), 'target_type' => 'deck', 'deck_id' => $decks['DECK-020']->id, 'sort_order' => 1]);
+        HeroSlide::create(['eyebrow' => 'Printed & boxed', 'title' => 'Made to be held', 'subtitle' => 'Our decks, printed on heavy stock.', 'image' => $art('home/demo/hero-2.jpg', 2400, 1200, [92, 30, 40], [18, 8, 14]), 'target_type' => 'product', 'product_id' => Product::firstWhere('slug', 'box-deck-020')->id, 'sort_order' => 2]);
+        HeroSlide::create(['title' => 'The Store', 'subtitle' => 'Dice, lingerie, heels and more.', 'image' => $art('home/demo/hero-3.jpg', 2400, 1200, [40, 28, 18], [10, 6, 8]), 'target_type' => 'custom', 'custom_url' => '/store', 'cta_label' => 'Shop Now', 'sort_order' => 3]);
+
+        InstagramPost::query()->delete();
+        foreach (range(1, 3) as $i) {
+            InstagramPost::create(['post_url' => "https://www.instagram.com/p/DEMO{$i}/", 'image' => $art("home/demo/ig-{$i}.jpg", 1080, 1080, [60 + $i * 20, 20, 40], [14, 6, 12]), 'caption' => "Sample post {$i}", 'sort_order' => $i]);
+        }
+
+        SiteSetting::put('instagram', ['handle' => 'provokenow', 'profile_url' => 'https://www.instagram.com/']);
+        SiteSetting::put('club', ['enabled' => true]);
+        SiteSetting::put('brand_story', 'Conversation and connection, set in card stock and candlelight.');
+    }
+
+    /** Placeholder artwork so local pages have something to render (no stock imagery). */
+    private function gradientJpeg(int $w, int $h, array $from, array $to): string
+    {
+        $img = imagecreatetruecolor($w, $h);
+        for ($y = 0; $y < $h; $y++) {
+            $t = $y / $h;
+            $color = imagecolorallocate($img, ...array_map(fn ($a, $b) => (int) ($a + ($b - $a) * $t), $from, $to));
+            imageline($img, 0, $y, $w, $y, $color);
+        }
+        ob_start();
+        imagejpeg($img, null, 82);
+
+        return (string) ob_get_clean();
     }
 
     private static function roman(int $n): string

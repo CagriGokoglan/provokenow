@@ -58,7 +58,7 @@ class InstagramPostResource extends Resource
         return $table
             ->reorderable('sort_order')
             ->defaultSort('sort_order')
-            ->description('The first '.InstagramPost::HOMEPAGE_LIMIT.' visible posts appear on the homepage, in this order.')
+            ->description('The homepage shows exactly '.InstagramPost::HOMEPAGE_LIMIT.' posts side by side: the section appears once '.InstagramPost::HOMEPAGE_LIMIT.' are visible, and uses the first '.InstagramPost::HOMEPAGE_LIMIT.' in this order.')
             ->columns([
                 Tables\Columns\ImageColumn::make('image')->disk('public')->square()->size(56),
                 Tables\Columns\TextColumn::make('post_url')->label('Post')->url(fn (InstagramPost $r) => $r->post_url, true)->limit(50),
