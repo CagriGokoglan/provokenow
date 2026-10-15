@@ -34,7 +34,7 @@ class HomepageAdminTest extends TestCase
     {
         Livewire::test(SiteSettings::class)
             ->fillForm([
-                'home_video' => ['url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=12s', 'opacity' => 60, 'start' => 5, 'end_trim' => 8, 'headline' => 'After *dark*', 'headline_style' => 'sans'],
+                'home_video' => ['url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=12s', 'opacity' => 60, 'start' => 5, 'end_trim' => 8, 'headline' => 'After dark'],
                 'club' => ['enabled' => false, 'headline' => 'Provoke Club'],
                 'instagram' => ['handle' => 'provokenow'],
                 'socials' => ['instagram' => 'https://www.instagram.com/provokenow/'],
@@ -44,13 +44,12 @@ class HomepageAdminTest extends TestCase
             ->assertHasNoFormErrors()
             ->assertNotified('Site settings saved');
 
-        $this->assertSame('After *dark*', SiteSetting::value('home_video')['headline']);
+        $this->assertSame('After dark', SiteSetting::value('home_video')['headline']);
         $this->getJson('/api/v1/home')
             ->assertJsonPath('data.video.youtube_id', 'dQw4w9WgXcQ')
             ->assertJsonPath('data.video.opacity', 60)
             ->assertJsonPath('data.video.start', 5)
             ->assertJsonPath('data.video.end_trim', 8)
-            ->assertJsonPath('data.video.headline_style', 'sans')
             ->assertJsonPath('data.club.enabled', false);
 
         Livewire::test(SiteSettings::class)

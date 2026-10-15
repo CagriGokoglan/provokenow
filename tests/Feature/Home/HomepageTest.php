@@ -53,7 +53,7 @@ class HomepageTest extends TestCase
 
         $this->assertSame('dQw4w9WgXcQ', $data['video']['youtube_id']);
         $this->assertSame(100, $data['video']['opacity'], 'Full opacity unless the admin lowers it.');
-        $this->assertSame([0, 0, 'serif'], [$data['video']['start'], $data['video']['end_trim'], $data['video']['headline_style']]);
+        $this->assertSame([0, 0], [$data['video']['start'], $data['video']['end_trim']]);
         $this->assertSame('After dark', $data['video']['headline']);
         $this->assertTrue($data['club']['enabled'], 'Provoke Club shows by default.');
 

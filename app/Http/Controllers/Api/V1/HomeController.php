@@ -63,7 +63,6 @@ class HomeController extends Controller
                 'opacity' => max(0, min(100, (int) ($video['opacity'] ?? 100))),
                 'start' => max(0, (int) ($video['start'] ?? 0)),
                 'end_trim' => max(0, (int) ($video['end_trim'] ?? 0)),
-                'headline_style' => in_array($video['headline_style'] ?? null, ['serif', 'accent', 'sans'], true) ? $video['headline_style'] : 'serif',
                 'headline' => $video['headline'] ?? null,
             ],
             'club' => [

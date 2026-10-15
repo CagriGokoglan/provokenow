@@ -7,7 +7,6 @@ use App\Support\YouTube;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -71,12 +70,7 @@ class SiteSettings extends Page implements HasForms
                 TextInput::make('home_video.headline')
                     ->label('Overlay headline')
                     ->maxLength(120)
-                    ->helperText('Wrap words in *asterisks* to set them in gold italic, e.g. After *dark*.'),
-                Select::make('home_video.headline_style')
-                    ->label('Headline style')
-                    ->options(['serif' => 'Serif (Cormorant Garamond)', 'accent' => 'Serif italic, gold', 'sans' => 'Sans (Plus Jakarta Sans)'])
-                    ->default('serif')
-                    ->selectablePlaceholder(false),
+                    ->helperText('Set like the other headlines: the last word in gold italic.'),
             ]),
 
             Section::make('Provoke Club (coming soon)')->columns(2)->schema([
