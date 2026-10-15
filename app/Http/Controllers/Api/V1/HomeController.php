@@ -39,6 +39,8 @@ class HomeController extends Controller
                 'image' => $s->imageUrl(),
                 'image_mobile' => $s->mobileImageUrl(),
                 'youtube_id' => YouTube::id($s->video_url),
+                'video_start' => (int) $s->video_start,
+                'video_end_trim' => (int) $s->video_end_trim,
                 'href' => $s->href(),
                 'cta_label' => $s->ctaLabel(),
                 'kind' => $s->target_type,
@@ -59,6 +61,9 @@ class HomeController extends Controller
             'video' => [
                 'youtube_id' => YouTube::id($video['url'] ?? null),
                 'opacity' => max(0, min(100, (int) ($video['opacity'] ?? 100))),
+                'start' => max(0, (int) ($video['start'] ?? 0)),
+                'end_trim' => max(0, (int) ($video['end_trim'] ?? 0)),
+                'headline_style' => in_array($video['headline_style'] ?? null, ['serif', 'accent', 'sans'], true) ? $video['headline_style'] : 'serif',
                 'headline' => $video['headline'] ?? null,
             ],
             'club' => [

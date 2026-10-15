@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'eyebrow', 'title', 'subtitle', 'image', 'image_mobile', 'video_url', 'target_type', 'deck_id', 'product_id',
+    'eyebrow', 'title', 'subtitle', 'image', 'image_mobile', 'video_url', 'video_start', 'video_end_trim', 'target_type', 'deck_id', 'product_id',
     'custom_url', 'cta_label', 'sort_order', 'is_active', 'starts_at', 'ends_at',
 ])]
 class HeroSlide extends Model
@@ -28,7 +28,7 @@ class HeroSlide extends Model
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean', 'sort_order' => 'integer', 'starts_at' => 'datetime', 'ends_at' => 'datetime'];
+        return ['is_active' => 'boolean', 'sort_order' => 'integer', 'video_start' => 'integer', 'video_end_trim' => 'integer', 'starts_at' => 'datetime', 'ends_at' => 'datetime'];
     }
 
     public function deck(): BelongsTo

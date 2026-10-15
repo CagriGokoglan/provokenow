@@ -39,7 +39,8 @@ class HeroSlideResource extends Resource
         return $form->columns(3)->schema([
             Section::make('Slide')->columnSpan(2)->schema([
                 TextInput::make('eyebrow')->label('Eyebrow / type')->maxLength(80)->placeholder('Digital Decks'),
-                TextInput::make('title')->required()->maxLength(120),
+                TextInput::make('title')->required()->maxLength(120)
+                    ->helperText('Wrap words in *asterisks* to set them in gold italic, e.g. Intimacy, *by design.*'),
                 TextInput::make('subtitle')->maxLength(255),
                 Grid::make(2)->schema([
                     FileUpload::make('image')
@@ -62,7 +63,22 @@ class HeroSlideResource extends Resource
                     ->placeholder('https://www.youtube.com/watch?v=…')
                     ->maxLength(255)
                     ->rule(YouTube::rule())
-                    ->helperText('Autoplays muted on a loop behind the copy; the image shows while it loads. With no image or video the slide uses the brand backdrop.'),
+                    ->helperText('Autoplays muted on a loop behind the copy; the image shows while it loads. With no image or video the slide uses the brand backdrop.')
+                    ->live(onBlur: true),
+                Grid::make(2)->schema([
+                    TextInput::make('video_start')
+                        ->label('Skip first (seconds)')
+                        ->numeric()->integer()->minValue(0)->maxValue(36000)
+                        ->placeholder('0')
+                        ->dehydrateStateUsing(fn ($state) => (int) $state)
+                        ->visible(fn (Get $get) => filled($get('video_url'))),
+                    TextInput::make('video_end_trim')
+                        ->label('Cut last (seconds)')
+                        ->numeric()->integer()->minValue(0)->maxValue(36000)
+                        ->placeholder('0')
+                        ->dehydrateStateUsing(fn ($state) => (int) $state)
+                        ->visible(fn (Get $get) => filled($get('video_url'))),
+                ]),
             ]),
             Section::make('Call to action')->columnSpan(1)->schema([
                 ToggleButtons::make('target_type')

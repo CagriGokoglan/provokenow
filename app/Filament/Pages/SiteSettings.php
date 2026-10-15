@@ -7,6 +7,7 @@ use App\Support\YouTube;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -51,13 +52,31 @@ class SiteSettings extends Page implements HasForms
                     ->placeholder('https://www.youtube.com/watch?v=…')
                     ->rule(YouTube::rule())
                     ->columnSpanFull(),
+                Grid::make(2)->schema([
+                    TextInput::make('home_video.start')
+                        ->label('Skip first (seconds)')
+                        ->numeric()->integer()->minValue(0)->maxValue(36000)
+                        ->placeholder('0'),
+                    TextInput::make('home_video.end_trim')
+                        ->label('Cut last (seconds)')
+                        ->numeric()->integer()->minValue(0)->maxValue(36000)
+                        ->placeholder('0'),
+                ]),
                 TextInput::make('home_video.opacity')
                     ->label('Video opacity')
                     ->numeric()->integer()->minValue(0)->maxValue(100)
                     ->suffix('%')
                     ->default(100)
                     ->helperText('Lower it to darken the video behind the headline (100 = fully visible).'),
-                TextInput::make('home_video.headline')->label('Overlay headline')->maxLength(120),
+                TextInput::make('home_video.headline')
+                    ->label('Overlay headline')
+                    ->maxLength(120)
+                    ->helperText('Wrap words in *asterisks* to set them in gold italic, e.g. After *dark*.'),
+                Select::make('home_video.headline_style')
+                    ->label('Headline style')
+                    ->options(['serif' => 'Serif (Cormorant Garamond)', 'accent' => 'Serif italic, gold', 'sans' => 'Sans (Plus Jakarta Sans)'])
+                    ->default('serif')
+                    ->selectablePlaceholder(false),
             ]),
 
             Section::make('Provoke Club (coming soon)')->columns(2)->schema([

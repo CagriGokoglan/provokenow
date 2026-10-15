@@ -34,7 +34,7 @@ class HomepageAdminTest extends TestCase
     {
         Livewire::test(SiteSettings::class)
             ->fillForm([
-                'home_video' => ['url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=12s', 'opacity' => 60, 'headline' => 'After dark'],
+                'home_video' => ['url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=12s', 'opacity' => 60, 'start' => 5, 'end_trim' => 8, 'headline' => 'After *dark*', 'headline_style' => 'sans'],
                 'club' => ['enabled' => false, 'headline' => 'Provoke Club'],
                 'instagram' => ['handle' => 'provokenow'],
                 'socials' => ['instagram' => 'https://www.instagram.com/provokenow/'],
@@ -44,10 +44,13 @@ class HomepageAdminTest extends TestCase
             ->assertHasNoFormErrors()
             ->assertNotified('Site settings saved');
 
-        $this->assertSame('After dark', SiteSetting::value('home_video')['headline']);
+        $this->assertSame('After *dark*', SiteSetting::value('home_video')['headline']);
         $this->getJson('/api/v1/home')
             ->assertJsonPath('data.video.youtube_id', 'dQw4w9WgXcQ')
             ->assertJsonPath('data.video.opacity', 60)
+            ->assertJsonPath('data.video.start', 5)
+            ->assertJsonPath('data.video.end_trim', 8)
+            ->assertJsonPath('data.video.headline_style', 'sans')
             ->assertJsonPath('data.club.enabled', false);
 
         Livewire::test(SiteSettings::class)
@@ -56,9 +59,9 @@ class HomepageAdminTest extends TestCase
             ->assertHasFormErrors(['socials.tiktok']);
 
         Livewire::test(SiteSettings::class)
-            ->fillForm(['home_video' => ['url' => 'https://vimeo.com/123456', 'opacity' => 150]])
+            ->fillForm(['home_video' => ['url' => 'https://vimeo.com/123456', 'opacity' => 150, 'start' => -3]])
             ->call('save')
-            ->assertHasFormErrors(['home_video.url', 'home_video.opacity']);
+            ->assertHasFormErrors(['home_video.url', 'home_video.opacity', 'home_video.start']);
     }
 
     public function test_hero_slide_links_to_a_deck(): void
@@ -80,6 +83,13 @@ class HomepageAdminTest extends TestCase
             ->fillForm(['title' => 'Bad link', 'image' => UploadedFile::fake()->image('hero.jpg'), 'target_type' => 'custom', 'custom_url' => 'javascript:alert(1)'])
             ->call('create')
             ->assertHasFormErrors(['custom_url']);
+
+        Livewire::test(CreateHeroSlide::class)
+            ->fillForm(['title' => 'Film', 'target_type' => 'custom', 'custom_url' => '/decks', 'video_url' => 'https://youtu.be/dQw4w9WgXcQ', 'video_start' => 4, 'video_end_trim' => null])
+            ->call('create')
+            ->assertHasNoFormErrors();
+        $film = HeroSlide::firstWhere('title', 'Film');
+        $this->assertSame([4, 0], [$film->video_start, $film->video_end_trim], 'An empty trim box means no trim.');
     }
 
     public function test_product_category_and_showcase_flags_are_saved(): void
