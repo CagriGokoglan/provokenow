@@ -12,7 +12,6 @@ use App\Models\Deck;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
-use App\Services\Marketing\BrevoEmailService;
 use App\Services\Payments\CheckoutRedirect;
 use App\Services\Payments\StripeGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -177,7 +176,7 @@ class StripeCheckoutTest extends TestCase
         $this->assertEquals(['name' => 'Ava Doe', 'line1' => '1 Main St', 'city' => 'Austin', 'state' => 'TX', 'postal_code' => '73301', 'country' => 'US', 'phone' => '+15550100'], $order->shipping_address);
         $this->assertTrue($order->user->hasAccessToDeck($this->deck));
 
-        Queue::assertPushed(SendTransactionalEmail::class, fn ($j) => $j->orderId === $order->id && $j->type === BrevoEmailService::ORDER_CONFIRMATION);
+        Queue::assertPushed(SendTransactionalEmail::class, fn ($j) => $j->orderId === $order->id && $j->type === SendTransactionalEmail::ORDER_CONFIRMATION);
         Queue::assertPushed(SendMetaConversionEvent::class, fn ($j) => $j->event['event_name'] === 'Purchase' && $j->event['event_id'] === "purchase.{$order->id}");
 
         // Stripe retries / duplicate deliveries change nothing.

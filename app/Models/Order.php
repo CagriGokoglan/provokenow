@@ -16,6 +16,7 @@ use Illuminate\Support\Str;
 #[Fillable([
     'order_number', 'user_id', 'customer_email', 'subtotal_cents', 'discount_cents', 'total_cents',
     'tax_cents', 'shipping_cents', 'currency', 'payment_status', 'fulfillment_status',
+    'courier_name', 'tracking_number', 'tracking_url', 'shipped_at', 'estimated_delivery_date', 'delivered_at',
     'shipping_address', 'billing_address', 'payment_gateway', 'transaction_id', 'paid_at', 'metadata',
 ])]
 #[ObservedBy(OrderObserver::class)]
@@ -46,6 +47,9 @@ class Order extends Model
     protected function casts(): array
     {
         return [
+            'shipped_at' => 'datetime',
+            'estimated_delivery_date' => 'date',
+            'delivered_at' => 'datetime',
             'subtotal_cents' => 'integer',
             'discount_cents' => 'integer',
             'total_cents' => 'integer',
@@ -65,9 +69,10 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** chaperone(): each item knows its order without another query (admin infolist, emails). */
     public function items(): HasMany
     {
-        return $this->hasMany(OrderItem::class);
+        return $this->hasMany(OrderItem::class)->chaperone('order');
     }
 
     public function entitlements(): HasMany

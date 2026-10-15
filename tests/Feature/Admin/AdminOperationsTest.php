@@ -21,7 +21,6 @@ use App\Models\Product;
 use App\Models\ProductUpsell;
 use App\Models\User;
 use App\Models\UserEntitlement;
-use App\Services\Marketing\BrevoEmailService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
@@ -180,7 +179,7 @@ class AdminOperationsTest extends TestCase
         $this->assertSame('BANK-REF-77', $order->transaction_id);
         $this->assertTrue($customer->hasAccessToDeck($deck));
 
-        Queue::assertPushed(SendTransactionalEmail::class, fn ($job) => $job->type === BrevoEmailService::ORDER_CONFIRMATION);
+        Queue::assertPushed(SendTransactionalEmail::class, fn ($job) => $job->type === SendTransactionalEmail::ORDER_CONFIRMATION);
         Queue::assertPushed(SendMetaConversionEvent::class, fn ($job) => $job->event['event_name'] === 'Purchase');
 
         Livewire::test(ViewOrder::class, ['record' => $order->getRouteKey()])->assertActionHidden('markPaid');
@@ -202,8 +201,9 @@ class AdminOperationsTest extends TestCase
 
         $order->refresh();
         $this->assertSame(FulfillmentStatus::Shipped, $order->fulfillment_status);
-        $this->assertSame('1Z999', $order->metadata['tracking_number']);
-        Queue::assertPushed(SendTransactionalEmail::class, fn ($job) => $job->type === BrevoEmailService::SHIPPING_UPDATE && $job->status === 'shipped');
+        $this->assertSame('1Z999', $order->tracking_number);
+        $this->assertNotNull($order->shipped_at, 'Shipping time is stamped when the status changes.');
+        Queue::assertPushed(SendTransactionalEmail::class, fn ($job) => $job->type === SendTransactionalEmail::SHIPPING_UPDATE && $job->status === 'shipped');
     }
 
     public function test_grant_and_revoke_deck_access_from_user_page(): void

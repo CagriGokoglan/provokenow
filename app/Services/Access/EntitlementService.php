@@ -3,19 +3,21 @@
 namespace App\Services\Access;
 
 use App\Enums\EntitlementStatus;
+use App\Mail\DigitalAccessGrantedMailable;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\UserEntitlement;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Mail;
 
 class EntitlementService
 {
     /** @return list<string> deck IDs the user can currently open */
     public function ownedDeckIds(User $user): array
     {
-        return $user->entitlements()->valid()->pluck('deck_id')->all();
+        return $user->entitlements()->valid()->pluck('deck_id')->values()->all();
     }
 
     /** True when the product only unlocks decks the user already has. */
@@ -38,7 +40,7 @@ class EntitlementService
     {
         $userId = $user instanceof User ? $user->getKey() : $user;
 
-        return collect(array_unique($deckIds))->map(function (string $deckId) use ($userId, $order, $expiresAt) {
+        $granted = collect(array_unique($deckIds))->map(function (string $deckId) use ($userId, $order, $expiresAt) {
             $existing = UserEntitlement::query()
                 ->where('user_id', $userId)
                 ->where('deck_id', $deckId)
@@ -67,5 +69,13 @@ class EntitlementService
                 'status' => EntitlementStatus::Active,
             ]);
         })->values();
+
+        // Purchases are announced by the order receipt; anything else (admin grants, gifts) gets its own email.
+        $new = $granted->filter(fn (UserEntitlement $e) => $e->wasRecentlyCreated)->pluck('deck_id')->all();
+        if ($order === null && $new !== [] && ($recipient = $user instanceof User ? $user : User::find($userId))) {
+            Mail::to($recipient)->queue(new DigitalAccessGrantedMailable($recipient, $new));
+        }
+
+        return $granted;
     }
 }

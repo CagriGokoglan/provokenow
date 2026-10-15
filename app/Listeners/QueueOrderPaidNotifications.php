@@ -5,7 +5,6 @@ namespace App\Listeners;
 use App\Events\OrderPaid;
 use App\Jobs\SendMetaConversionEvent;
 use App\Jobs\SendTransactionalEmail;
-use App\Services\Marketing\BrevoEmailService;
 use App\Services\Marketing\MetaCapiService;
 
 class QueueOrderPaidNotifications
@@ -16,7 +15,7 @@ class QueueOrderPaidNotifications
     {
         $order = $event->order;
 
-        SendTransactionalEmail::dispatch($order->getKey(), BrevoEmailService::ORDER_CONFIRMATION);
+        SendTransactionalEmail::dispatch($order->getKey(), SendTransactionalEmail::ORDER_CONFIRMATION);
 
         if ($purchase = $this->meta->purchaseEvent($order)) {
             SendMetaConversionEvent::dispatch($purchase);

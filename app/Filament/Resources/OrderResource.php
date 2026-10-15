@@ -8,7 +8,10 @@ use App\Exceptions\BusinessRuleException;
 use App\Filament\Resources\OrderResource\Pages;
 use App\Models\Order;
 use App\Services\Commerce\OrderFulfillmentService;
+use App\Support\Couriers;
 use Filament\Actions\Action as PageAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\Grid;
@@ -22,9 +25,10 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Table;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
-/** Read-only order book plus the two operational actions: confirm payment, update fulfilment. */
+/** Read-only order book plus the operational actions: confirm payment, mark shipped, update fulfilment. */
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
@@ -65,7 +69,8 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('total_cents')->label('Total')->sortable()
                     ->money(fn (Order $record) => $record->currency, divideBy: 100),
                 Tables\Columns\TextColumn::make('payment_status')->label('Payment')->badge()->sortable(),
-                Tables\Columns\TextColumn::make('fulfillment_status')->label('Fulfillment')->badge()->sortable(),
+                Tables\Columns\TextColumn::make('fulfillment_status')->label('Fulfillment')->badge()->sortable()
+                    ->description(fn (Order $record) => $record->tracking_number ? trim("{$record->courier_name} {$record->tracking_number}") : null),
                 Tables\Columns\TextColumn::make('created_at')->dateTime('M j, Y H:i')->sortable()
                     ->description(fn (Order $record) => $record->created_at?->diffForHumans()),
             ])
@@ -125,9 +130,32 @@ class OrderResource extends Resource
                 Section::make('Payment')->columnSpan(1)->schema([
                     TextEntry::make('payment_gateway')->placeholder('—'),
                     TextEntry::make('transaction_id')->label('Transaction ID')->copyable()->placeholder('—'),
-                    TextEntry::make('metadata.tracking_number')->label('Tracking number')->placeholder('—')->copyable(),
                 ]),
             ]),
+            Section::make('Fulfilment & shipping')
+                ->icon('heroicon-o-truck')
+                ->visible(fn (Order $o) => (bool) ($o->metadata['requires_shipping'] ?? false))
+                ->columns(4)
+                ->schema([
+                    TextEntry::make('fulfillment_status')->label('Status')->badge(),
+                    TextEntry::make('courier_name')->label('Courier')->placeholder('—'),
+                    TextEntry::make('tracking_number')->label('Tracking number')->copyable()->placeholder('—'),
+                    TextEntry::make('tracking_url')->label('Tracking link')->placeholder('—')
+                        ->formatStateUsing(fn () => 'Open tracking page')
+                        ->url(fn (Order $o) => $o->tracking_url, shouldOpenInNewTab: true),
+                    TextEntry::make('shipped_at')->dateTime('M j, Y H:i')->placeholder('Not shipped'),
+                    TextEntry::make('estimated_delivery_date')->label('Estimated delivery')->date('M j, Y')
+                        ->placeholder(config('provoke.default_delivery_estimate').' (default)'),
+                    TextEntry::make('delivered_at')->dateTime('M j, Y H:i')->placeholder('—'),
+                    TextEntry::make('emails')->label('Customer emails sent')
+                        ->state(fn (Order $o) => collect($o->metadata['emails_sent'] ?? [])
+                            ->map(fn ($at, $key) => str($key)->before(':')->replace('_', ' ')->ucfirst()
+                                .(substr_count($key, ':') > 1 ? ' ('.str($key)->afterLast(':').')' : '')
+                                .' · '.Carbon::parse($at)->format('M j H:i'))
+                            ->values()->all())
+                        ->listWithLineBreaks()
+                        ->placeholder('None yet'),
+                ]),
             Section::make('Deck access granted')->collapsible()->schema([
                 RepeatableEntry::make('entitlements')->hiddenLabel()->columns(3)->schema([
                     TextEntry::make('deck.deck_code')->label('Deck'),
@@ -178,36 +206,105 @@ class OrderResource extends Resource
             });
     }
 
-    /** Moves a paid physical order through processing → shipped → delivered (emails the customer). */
+    /** Shipping details form shared by both fulfilment actions. */
+    private static function shippingFields(bool $trackingRequired): array
+    {
+        return [
+            TextInput::make('courier_name')
+                ->label('Courier')
+                ->datalist(Couriers::names())
+                ->required($trackingRequired)
+                ->maxLength(80)
+                ->placeholder('DHL, FedEx, UPS, Local courier…'),
+            TextInput::make('tracking_number')->required($trackingRequired)->maxLength(100),
+            TextInput::make('tracking_url')
+                ->label('Tracking link')
+                ->url()
+                ->maxLength(500)
+                ->helperText('Leave empty for DHL, FedEx, UPS, USPS and Royal Mail: it is built from the tracking number.'),
+            DatePicker::make('estimated_delivery_date')
+                ->label('Estimated delivery')
+                ->native(false)
+                ->minDate(today())
+                ->helperText('Optional. Without a date the email says "'.config('provoke.default_delivery_estimate').'".'),
+        ];
+    }
+
+    /** @param array<string, mixed> $data */
+    private static function shippingAttributes(array $data): array
+    {
+        return [
+            'courier_name' => $data['courier_name'] ?: null,
+            'tracking_number' => $data['tracking_number'] ? trim($data['tracking_number']) : null,
+            'tracking_url' => ($data['tracking_url'] ?? null) ?: Couriers::trackingUrl($data['courier_name'] ?? null, $data['tracking_number'] ?? null),
+            'estimated_delivery_date' => $data['estimated_delivery_date'] ?? null,
+        ];
+    }
+
+    private static function shipsPhysically(Order $record): bool
+    {
+        return $record->isPaid() && ($record->metadata['requires_shipping'] ?? false);
+    }
+
+    /** One step from "packed" to "customer has the tracking email". */
+    public static function markShippedAction(): PageAction
+    {
+        return PageAction::make('markShipped')
+            ->label('Mark as Shipped & Send Notification')
+            ->icon('heroicon-o-paper-airplane')
+            ->color('success')
+            ->visible(fn (Order $record) => static::shipsPhysically($record)
+                && in_array($record->fulfillment_status, [FulfillmentStatus::Unfulfilled, FulfillmentStatus::Processing], true))
+            ->modalHeading('Mark as shipped')
+            ->modalDescription('Saves the tracking details and emails the customer their courier, tracking link and delivery estimate.')
+            ->modalSubmitActionLabel('Mark shipped & email customer')
+            ->form([
+                ...static::shippingFields(trackingRequired: true),
+                DateTimePicker::make('shipped_at')->label('Shipped at')->default(now())->required()->native(false)->maxDate(now()),
+            ])
+            ->action(function (Order $record, array $data) {
+                $record->update([
+                    ...static::shippingAttributes($data),
+                    'shipped_at' => $data['shipped_at'],
+                    'fulfillment_status' => FulfillmentStatus::Shipped,
+                ]);
+
+                Notification::make()->success()
+                    ->title("Order {$record->order_number} marked as shipped")
+                    ->body("The shipping email is queued for {$record->customer_email}.")
+                    ->send();
+            });
+    }
+
+    /** Any other change: processing, delivered, cancelled, or correcting tracking details. */
     public static function updateFulfillmentAction(): PageAction
     {
         return PageAction::make('updateFulfillment')
             ->label('Update fulfilment')
             ->icon('heroicon-o-truck')
-            ->color('info')
-            ->visible(fn (Order $record) => $record->isPaid() && ($record->metadata['requires_shipping'] ?? false))
+            ->color('gray')
+            ->visible(fn (Order $record) => static::shipsPhysically($record))
             ->fillForm(fn (Order $record) => [
                 'fulfillment_status' => $record->fulfillment_status,
-                'tracking_number' => $record->metadata['tracking_number'] ?? null,
-                'tracking_url' => $record->metadata['tracking_url'] ?? null,
+                'courier_name' => $record->courier_name,
+                'tracking_number' => $record->tracking_number,
+                'tracking_url' => $record->tracking_url,
+                'estimated_delivery_date' => $record->estimated_delivery_date,
             ])
             ->form([
-                Select::make('fulfillment_status')->options(FulfillmentStatus::class)->required()->native(false),
-                TextInput::make('tracking_number')->maxLength(100),
-                TextInput::make('tracking_url')->url()->maxLength(500),
+                Select::make('fulfillment_status')
+                    ->label('Status')
+                    ->options(FulfillmentStatus::class)
+                    ->required()
+                    ->native(false)
+                    ->helperText('Changing to Shipped or Delivered emails the customer (once per status).'),
+                ...static::shippingFields(trackingRequired: false),
             ])
             ->action(function (Order $record, array $data) {
-                $record->update([
-                    'fulfillment_status' => $data['fulfillment_status'],
-                    'metadata' => [
-                        ...($record->metadata ?? []),
-                        'tracking_number' => $data['tracking_number'],
-                        'tracking_url' => $data['tracking_url'],
-                    ],
-                ]);
+                $record->update([...static::shippingAttributes($data), 'fulfillment_status' => $data['fulfillment_status']]);
 
                 Notification::make()->success()->title('Fulfilment updated')->body(
-                    in_array($record->fulfillment_status, [FulfillmentStatus::Shipped, FulfillmentStatus::Delivered], true)
+                    $record->wasChanged('fulfillment_status') && in_array($record->fulfillment_status, [FulfillmentStatus::Shipped, FulfillmentStatus::Delivered], true)
                         ? 'The customer will be emailed.'
                         : null
                 )->send();

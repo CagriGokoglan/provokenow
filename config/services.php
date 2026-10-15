@@ -25,17 +25,12 @@ return [
 
     'brevo' => [
         'key' => env('BREVO_API_KEY'),
-        'endpoint' => env('BREVO_ENDPOINT', 'https://api.brevo.com/v3/smtp/email'),
         'sender' => [
             'email' => env('BREVO_SENDER_EMAIL', 'orders@provokenow.com'),
             'name' => env('BREVO_SENDER_NAME', 'PROVOKE NOW'),
         ],
         'reply_to' => env('BREVO_REPLY_TO', 'care@provokenow.com'),
-        // Optional Brevo template IDs. When empty, the built-in Blade templates are sent as htmlContent.
-        'templates' => [
-            'order_confirmation' => env('BREVO_TEMPLATE_ORDER_CONFIRMATION'),
-            'shipping_update' => env('BREVO_TEMPLATE_SHIPPING_UPDATE'),
-        ],
+        // Order emails are Laravel Mailables (app/Mail) sent through the brevo mailer (config/mail.php).
     ],
 
     'meta' => [

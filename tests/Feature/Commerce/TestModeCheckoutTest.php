@@ -10,7 +10,6 @@ use App\Models\Deck;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
-use App\Services\Marketing\BrevoEmailService;
 use App\Services\Payments\StripeGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
@@ -70,7 +69,7 @@ class TestModeCheckoutTest extends TestCase
         $this->assertSame(PaymentStatus::Paid, $order->payment_status);
         $this->assertSame('test', $order->payment_gateway);
         $this->assertTrue($user->hasAccessToDeck($this->deck));
-        Queue::assertPushed(SendTransactionalEmail::class, fn ($j) => $j->type === BrevoEmailService::ORDER_CONFIRMATION);
+        Queue::assertPushed(SendTransactionalEmail::class, fn ($j) => $j->type === SendTransactionalEmail::ORDER_CONFIRMATION);
         Queue::assertPushed(SendMetaConversionEvent::class, fn ($j) => $j->event['event_name'] === 'Purchase');
 
         // Paying twice is harmless.

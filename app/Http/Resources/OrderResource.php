@@ -27,8 +27,11 @@ class OrderResource extends JsonResource
             'billing_address' => $this->billing_address,
             'paid_at' => $this->paid_at?->toIso8601String(),
             'tracking' => array_filter([
-                'number' => $this->metadata['tracking_number'] ?? null,
-                'url' => $this->metadata['tracking_url'] ?? null,
+                'courier' => $this->courier_name,
+                'number' => $this->tracking_number,
+                'url' => $this->tracking_url,
+                'shipped_at' => $this->shipped_at?->toIso8601String(),
+                'estimated_delivery' => $this->estimated_delivery_date?->toDateString(),
             ]) ?: null,
             'created_at' => $this->created_at?->toIso8601String(),
             'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item) => [

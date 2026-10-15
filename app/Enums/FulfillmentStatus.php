@@ -11,6 +11,7 @@ enum FulfillmentStatus: string implements HasColor, HasLabel
     case Processing = 'processing';
     case Shipped = 'shipped';
     case Delivered = 'delivered';
+    case Cancelled = 'cancelled';
 
     /** @return list<string> */
     public static function values(): array
@@ -21,10 +22,11 @@ enum FulfillmentStatus: string implements HasColor, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Unfulfilled => 'Unfulfilled',
+            self::Unfulfilled => 'Pending',
             self::Processing => 'Processing',
             self::Shipped => 'Shipped',
             self::Delivered => 'Delivered',
+            self::Cancelled => 'Cancelled',
         };
     }
 
@@ -35,6 +37,7 @@ enum FulfillmentStatus: string implements HasColor, HasLabel
             self::Processing => 'warning',
             self::Shipped => 'info',
             self::Delivered => 'success',
+            self::Cancelled => 'danger',
         };
     }
 }

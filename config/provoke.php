@@ -48,6 +48,22 @@ return [
     | Admin image uploads are re-encoded in the background (App\Jobs\OptimizeModelImages):
     | WebP for site imagery, JPEG for social share images.
     */
+    /*
+    | Couriers offered in the admin "Mark as shipped" action. {number} is replaced by the
+    | tracking number to build the customer's tracking link (left empty = enter it by hand).
+    */
+    'couriers' => [
+        'DHL' => 'https://www.dhl.com/global-en/home/tracking/tracking-express.html?submit=1&tracking-id={number}',
+        'FedEx' => 'https://www.fedex.com/fedextrack/?trknbr={number}',
+        'UPS' => 'https://www.ups.com/track?tracknum={number}',
+        'USPS' => 'https://tools.usps.com/go/TrackConfirmAction?tLabels={number}',
+        'Royal Mail' => 'https://www.royalmail.com/track-your-item#/tracking-results/{number}',
+        'Local courier' => '',
+    ],
+
+    // Shown in the shipping email when the admin leaves the estimated delivery date empty.
+    'default_delivery_estimate' => env('DEFAULT_DELIVERY_ESTIMATE', '3–7 business days'),
+
     'auth' => [
         // Minutes an email verification link stays valid (reset links: auth.passwords.users.expire).
         'verification_expire' => (int) env('EMAIL_VERIFICATION_EXPIRE', 1440),

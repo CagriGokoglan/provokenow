@@ -6,15 +6,16 @@ use App\Enums\FulfillmentStatus;
 use App\Enums\UserRole;
 use App\Jobs\SendMetaConversionEvent;
 use App\Jobs\SendTransactionalEmail;
+use App\Mail\OrderReceiptMailable;
 use App\Models\Deck;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
-use App\Services\Marketing\BrevoEmailService;
 use App\Services\Marketing\MetaCapiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request as HttpRequest;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -107,8 +108,8 @@ class OrderMarketingEventsTest extends TestCase
         });
 
         Queue::assertPushed(SendTransactionalEmail::class, fn ($job) => $job->orderId === $orderId
-            && $job->type === BrevoEmailService::ORDER_CONFIRMATION);
-        Queue::assertNotPushed(SendTransactionalEmail::class, fn ($job) => $job->type === BrevoEmailService::SHIPPING_UPDATE);
+            && $job->type === SendTransactionalEmail::ORDER_CONFIRMATION);
+        Queue::assertNotPushed(SendTransactionalEmail::class, fn ($job) => $job->type === SendTransactionalEmail::SHIPPING_UPDATE);
     }
 
     public function test_no_meta_events_without_consent_but_email_still_sent(): void
@@ -150,16 +151,14 @@ class OrderMarketingEventsTest extends TestCase
         $order = Order::find($orderId);
         $order->update(['fulfillment_status' => FulfillmentStatus::Shipped]);
 
-        Queue::assertPushed(SendTransactionalEmail::class, fn ($job) => $job->type === BrevoEmailService::SHIPPING_UPDATE
+        Queue::assertPushed(SendTransactionalEmail::class, fn ($job) => $job->type === SendTransactionalEmail::SHIPPING_UPDATE
             && $job->status === 'shipped' && $job->orderId === $orderId);
     }
 
-    public function test_capi_job_posts_to_graph_api_and_brevo_job_sends_once(): void
+    public function test_capi_job_posts_to_graph_api_and_receipt_job_sends_once(): void
     {
-        Http::fake([
-            'graph.facebook.com/*' => Http::response(['events_received' => 1]),
-            'api.brevo.com/*' => Http::response(['messageId' => '<abc@brevo>'], 201),
-        ]);
+        Http::fake(['graph.facebook.com/*' => Http::response(['events_received' => 1])]);
+        Mail::fake();
 
         Queue::fake();
         $orderId = $this->purchase(self::CONSENT);
@@ -172,20 +171,19 @@ class OrderMarketingEventsTest extends TestCase
             && str_contains($r->url(), 'access_token=capi-token')
             && $r['data'][0]['event_name'] === 'Purchase');
 
-        $emailJob = new SendTransactionalEmail($orderId, BrevoEmailService::ORDER_CONFIRMATION);
-        $emailJob->handle(app(BrevoEmailService::class));
-        $emailJob->handle(app(BrevoEmailService::class)); // retry after success → no second send
+        $emailJob = new SendTransactionalEmail($orderId, SendTransactionalEmail::ORDER_CONFIRMATION);
+        $emailJob->handle();
+        $emailJob->handle(); // retry after success → no second send
 
-        $brevoCalls = Http::recorded(fn (HttpRequest $r) => str_contains($r->url(), 'api.brevo.com'));
-        $this->assertCount(1, $brevoCalls);
-
-        [$request] = $brevoCalls->first();
         $order = Order::find($orderId);
-        $this->assertSame('https://api.brevo.com/v3/smtp/email', $request->url());
-        $this->assertSame('brevo-key', $request->header('api-key')[0]);
-        $this->assertSame('Ava.Doe@Example.com', $request['to'][0]['email']);
-        $this->assertSame("Your PROVOKE NOW order {$order->order_number} is confirmed", $request['subject']);
-        $this->assertStringContainsString('https://provokenow.com/decks/deck-010/play', $request['htmlContent']);
+        Mail::assertSentCount(1);
+        Mail::assertSent(OrderReceiptMailable::class, function (OrderReceiptMailable $mail) use ($order) {
+            $mail->assertHasSubject("Your PROVOKE NOW order {$order->order_number} is confirmed");
+            $mail->assertSeeInHtml('https://provokenow.com/decks/deck-010/play');
+            $mail->assertSeeInHtml('https://provokenow.com/account/library');
+
+            return $mail->hasTo('Ava.Doe@Example.com') && $mail->hasFrom('orders@provokenow.com');
+        });
         $this->assertArrayHasKey("order_confirmation:{$orderId}", $order->metadata['emails_sent']);
     }
 
@@ -198,7 +196,10 @@ class OrderMarketingEventsTest extends TestCase
         $orderId = $this->purchase(self::CONSENT);
         Queue::assertNotPushed(SendMetaConversionEvent::class);
 
-        (new SendTransactionalEmail($orderId, BrevoEmailService::ORDER_CONFIRMATION))->handle(app(BrevoEmailService::class));
+        Mail::fake();
+        config(['mail.default' => 'brevo', 'mail.mailers.brevo.key' => null]);
+        (new SendTransactionalEmail($orderId, SendTransactionalEmail::ORDER_CONFIRMATION))->handle();
         Http::assertNothingSent();
+        Mail::assertNothingSent();
     }
 }

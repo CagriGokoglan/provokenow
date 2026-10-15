@@ -16,7 +16,9 @@ class ViewOrder extends ViewRecord
         return [
             OrderResource::markPaidAction(Action::make('markPaid'))
                 ->after(fn () => $this->record = $this->resolveRecord($this->record->getKey())),
-            OrderResource::updateFulfillmentAction(),
+            // Reload afterwards so the page shows the new status/tracking with its relations intact.
+            OrderResource::markShippedAction()->after(fn () => $this->record = $this->resolveRecord($this->record->getKey())),
+            OrderResource::updateFulfillmentAction()->after(fn () => $this->record = $this->resolveRecord($this->record->getKey())),
         ];
     }
 
