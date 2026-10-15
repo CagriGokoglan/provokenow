@@ -34,6 +34,9 @@ return [
             'store_category' => '/store/{slug}',
             // Signed-in reading view for an owned deck (linked from order emails).
             'library_deck' => '/decks/{code}/play',
+            // Account emails link to web pages, which call the API.
+            'verify_email' => '/auth/verify-email',
+            'reset_password' => '/auth/reset-password',
         ],
         // Admin edits ping the web app to refresh its cache (shared secret; unset = off).
         // On the VPS point it straight at the local Next.js process: http://127.0.0.1:3000/revalidate
@@ -45,6 +48,11 @@ return [
     | Admin image uploads are re-encoded in the background (App\Jobs\OptimizeModelImages):
     | WebP for site imagery, JPEG for social share images.
     */
+    'auth' => [
+        // Minutes an email verification link stays valid (reset links: auth.passwords.users.expire).
+        'verification_expire' => (int) env('EMAIL_VERIFICATION_EXPIRE', 1440),
+    ],
+
     'images' => [
         'quality' => (int) env('IMAGE_QUALITY', 82),
         'max_dimension' => (int) env('IMAGE_MAX_DIMENSION', 2400),

@@ -8,8 +8,11 @@ use App\Services\Payments\TestPaymentGateway;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\Mailer\Bridge\Brevo\Transport\BrevoTransportFactory;
+use Symfony\Component\Mailer\Transport\Dsn;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +37,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Mail::extend('brevo', fn (array $config) => (new BrevoTransportFactory)->create(
+            new Dsn('brevo+api', 'default', (string) $config['key'])
+        ));
+
         // Catch lazy-loading / silently discarded attributes during development.
         Model::shouldBeStrict(! $this->app->isProduction());
 

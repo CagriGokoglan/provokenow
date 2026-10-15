@@ -28,6 +28,9 @@ class AuthController extends Controller
             return $user;
         });
 
+        // Queued (after commit): the response doesn't wait for Brevo.
+        $user->sendEmailVerificationNotification();
+
         return ApiResponse::success(
             $this->tokenPayload($user, $request->input('device_name')),
             'Registration successful.',

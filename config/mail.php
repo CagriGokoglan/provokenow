@@ -37,6 +37,12 @@ return [
 
     'mailers' => [
 
+        // Brevo transactional API (same BREVO_API_KEY as the order emails). MAIL_MAILER=brevo.
+        'brevo' => [
+            'transport' => 'brevo',
+            'key' => env('BREVO_API_KEY'),
+        ],
+
         'smtp' => [
             'transport' => 'smtp',
             'scheme' => env('MAIL_SCHEME'),
