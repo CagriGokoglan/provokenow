@@ -51,6 +51,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Commerce'),
                 NavigationGroup::make('Homepage'),
                 NavigationGroup::make('Customers'),
+                NavigationGroup::make('Legal & Support'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

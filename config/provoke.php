@@ -136,6 +136,31 @@ return [
         'unlock_ttl_minutes' => (int) env('VAULT_UNLOCK_TTL_MINUTES', 15),
     ],
 
+    /*
+    | The company behind the site, as named in the legal pages and on card statements.
+    */
+    'company' => [
+        'name' => env('COMPANY_NAME', 'GKLN ENTERPRISES LLC'),
+        'billing_descriptor' => env('COMPANY_BILLING_DESCRIPTOR', 'GKLN ENTERPRISES LLC'),
+        'support_email' => env('SUPPORT_EMAIL', 'support@provokenow.com'),
+    ],
+
+    /*
+    | Contact form (/legal/contact). Messages are stored and emailed to `to`.
+    | Bot protection: a honeypot field and a signed, single-use form token that must be at
+    | least `min_seconds` old. Set TURNSTILE_SITE_KEY + TURNSTILE_SECRET_KEY to also require
+    | a Cloudflare Turnstile check.
+    */
+    'contact' => [
+        'to' => env('CONTACT_TO', env('SUPPORT_EMAIL', 'support@provokenow.com')),
+        'min_seconds' => (int) env('CONTACT_MIN_SECONDS', 3),
+        'token_ttl_minutes' => 120,
+        'turnstile' => [
+            'site_key' => env('TURNSTILE_SITE_KEY'),
+            'secret_key' => env('TURNSTILE_SECRET_KEY'),
+        ],
+    ],
+
     // POST /api/v1/orders/fulfill-test simulates a payment webhook. Never enable in production.
     'enable_test_fulfillment' => (bool) env('ENABLE_TEST_FULFILLMENT', false),
 

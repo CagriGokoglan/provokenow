@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             HeroSlideSeeder::class,
             DefaultFaqSeeder::class,
             BlogSeeder::class,
+            LegalPageSeeder::class,
         ]);
     }
 }

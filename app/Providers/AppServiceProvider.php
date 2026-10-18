@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Contracts\PaymentGateway;
+use App\Http\Controllers\Api\V1\ContactController;
 use App\Services\Payments\StripeGateway;
 use App\Services\Payments\TestPaymentGateway;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -52,6 +53,15 @@ class AppServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('club', fn (Request $request) => Limit::perMinute(5)->by('club:'.$request->ip()));
+
+        RateLimiter::for('contact-token', fn (Request $request) => Limit::perMinute(20)->by('contact-token:'.ContactController::clientIp($request)));
+
+        // Contact form: per visitor, per sender address, and a site-wide ceiling.
+        RateLimiter::for('contact', fn (Request $request) => [
+            Limit::perMinute(3)->by('contact-ip:'.ContactController::clientIp($request)),
+            Limit::perHour(5)->by('contact-email:'.mb_strtolower((string) $request->input('email'))),
+            Limit::perHour(60)->by('contact-all'),
+        ]);
 
         // Passcodes are short; keep brute force impractical.
         RateLimiter::for('vault', fn (Request $request) => Limit::perMinute(5)->by('vault:'.$request->user()?->getKey()));

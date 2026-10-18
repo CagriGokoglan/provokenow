@@ -9,8 +9,10 @@ use App\Http\Controllers\Api\V1\BlogController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\ClubController;
+use App\Http\Controllers\Api\V1\ContactController;
 use App\Http\Controllers\Api\V1\DeckController;
 use App\Http\Controllers\Api\V1\HomeController;
+use App\Http\Controllers\Api\V1\LegalPageController;
 use App\Http\Controllers\Api\V1\OrderFulfillmentController;
 use App\Http\Controllers\Api\V1\ProductController;
 use App\Http\Controllers\Api\V1\PublicConfigController;
@@ -58,8 +60,12 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('blog/posts', [BlogController::class, 'index'])->name('blog.index');
         Route::get('blog/categories', [BlogController::class, 'categories'])->name('blog.categories');
         Route::get('blog/posts/{slug}', [BlogController::class, 'show'])->name('blog.show');
+        Route::get('legal-pages', [LegalPageController::class, 'index'])->name('legal.index');
+        Route::get('legal-pages/{slug}', [LegalPageController::class, 'show'])->name('legal.show');
     });
     Route::post('club/subscribe', [ClubController::class, 'subscribe'])->middleware('throttle:club')->name('club.subscribe');
+    Route::get('contact/token', [ContactController::class, 'token'])->middleware('throttle:contact-token')->name('contact.token');
+    Route::post('contact', [ContactController::class, 'send'])->middleware('throttle:contact')->name('contact.send');
 
     // Catalogue (public)
     // Personalised (full cards for owners), so never cached.
