@@ -207,7 +207,7 @@ class SchemaGeneratorService
         $faqs[] = [
             'question' => "What is {$deck->title}?",
             'answer' => "{$deck->title} is a {$cardCount}-card {$deck->segment->label()} deck for couples by {$brand}, "
-                ."rated {$deck->intensity_level} out of 4 for intensity."
+                ."rated {$deck->intensity_level} out of ".Deck::MAX_INTENSITY.' for intensity.'
                 .($keywords !== '' ? " It explores {$keywords}." : ''),
         ];
 

@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\DeckSegment;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CardResource;
 use App\Http\Resources\DeckResource;
 use App\Http\Resources\ProductResource;
+use App\Models\Card;
 use App\Models\Deck;
 use App\Models\HeroSlide;
 use App\Models\InstagramPost;
@@ -24,9 +27,15 @@ class HomeController extends Controller
 
     public const SHOWCASE_LIMIT = 6;
 
+    /** "Draw a card": random cards from Light and Medium Spice decks, never their first six. */
+    public const SHOWCASE_SKIP_CARDS = 6;
+
+    /** Cached with the page, so send a pool; the web app draws six from it per visit. */
+    public const SHOWCASE_CARD_POOL = 36;
+
     public function __invoke(): JsonResponse
     {
-        $products = fn () => Product::storefront()->with(['decks:id,deck_code,slug', 'category:id,name,slug']);
+        $products = fn () => Product::storefront()->with(['decks:id,deck_code,slug,title', 'category:id,name,slug']);
 
         $slides = HeroSlide::live()
             ->with(['deck:id,deck_code,slug,is_active', 'product:id,slug,is_active'])
@@ -56,6 +65,7 @@ class HomeController extends Controller
             'hero_slides' => $slides,
             'popular_products' => ProductResource::collection($products()->where('is_featured', true)->orderBy('sort_order')->orderBy('name')->limit(self::GRID_LIMIT)->get()),
             'showcase_decks' => DeckResource::collection(Deck::active()->with(['categories' => fn ($q) => $q->active()])->orderBy('deck_code')->limit(self::SHOWCASE_LIMIT)->get()),
+            'showcase_cards' => $this->showcaseCards(),
             'boxed_games' => ProductResource::collection($products()->where('is_boxed_game', true)->orderBy('sort_order')->orderBy('name')->limit(self::SHOWCASE_LIMIT)->get()),
             'new_arrivals' => ProductResource::collection($products()->where('is_new_arrival', true)->orderBy('sort_order')->latest()->limit(self::GRID_LIMIT)->get()),
             'video' => [
@@ -81,5 +91,22 @@ class HomeController extends Controller
                 ])->values(),
             ],
         ], 'Homepage.');
+    }
+
+    private function showcaseCards(): array
+    {
+        return Card::query()
+            ->where('card_number', '>', self::SHOWCASE_SKIP_CARDS)
+            ->whereHas('deck', fn ($q) => $q->active()->whereIn('segment', [DeckSegment::LightIgnition, DeckSegment::MediumSpice]))
+            ->with(['deck' => fn ($q) => $q->select(['id', 'deck_code', 'slug', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'card_front_bg_url', 'card_back_bg_url'])->withCount('cards')])
+            ->inRandomOrder()
+            ->limit(self::SHOWCASE_CARD_POOL)
+            ->get()
+            ->map(fn (Card $card) => [
+                'card' => new CardResource($card),
+                'deck' => new DeckResource($card->deck),
+                'total_cards' => (int) $card->deck->cards_count,
+            ])
+            ->all();
     }
 }

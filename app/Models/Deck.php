@@ -32,6 +32,11 @@ class Deck extends Model
 {
     use FlushesFrontendCache, HasFactory, HasUuids, OptimizesImages;
 
+    /** Intensity is rated 1 (lowest) to 5 (highest), numbers only. */
+    public const MAX_INTENSITY = 5;
+
+    public const INTENSITY_OPTIONS = [1 => '1', 2 => '2', 3 => '3', 4 => '4', 5 => '5'];
+
     /** Uploaded images re-encoded in the background (see OptimizesImages). */
     public function imageFields(): array
     {

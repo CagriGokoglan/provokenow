@@ -31,7 +31,7 @@ class DeckImportTest extends TestCase
             'deck_code' => 'deck-007',
             'title' => 'Velvet Rope',
             'segment' => 'Medium Spice',
-            'intensity_level' => 3,
+            'intensity_level' => 5,
             'core_theme_keywords' => ['play', 'trust', 'role reversal'],
             'fantasy_categories' => ['Roleplay', 'does-not-exist'],
             'whats_inside' => "Fifty cards.\n\nVelvet box.",
@@ -57,7 +57,7 @@ class DeckImportTest extends TestCase
             ->assertNotified('DECK-007 — Velvet Rope imported');
 
         $deck = Deck::firstWhere('deck_code', 'DECK-007');
-        $this->assertSame([DeckSegment::MediumSpice, 3, 'play, trust, role reversal', false], [$deck->segment, $deck->intensity_level, $deck->core_theme_keywords, $deck->is_active]);
+        $this->assertSame([DeckSegment::MediumSpice, 5, 'play, trust, role reversal', false], [$deck->segment, $deck->intensity_level, $deck->core_theme_keywords, $deck->is_active]);
         $this->assertSame(['roleplay'], $deck->categories()->pluck('slug')->all(), 'Unknown categories are skipped.');
         $this->assertSame("- Draw\n- Answer", $deck->how_to_play);
         $this->assertSame(2, count($deck->faqs));
@@ -68,7 +68,7 @@ class DeckImportTest extends TestCase
     public function test_invalid_json_and_rule_breaks_are_reported_without_saving(): void
     {
         Livewire::test(ListDecks::class)->callAction('importDeck', data: ['json' => '{ not json']);
-        Livewire::test(ListDecks::class)->callAction('importDeck', data: ['json' => $this->deckJson(['segment' => 'Spicy', 'intensity_level' => 9, 'meta_title' => str_repeat('x', 61)])])
+        Livewire::test(ListDecks::class)->callAction('importDeck', data: ['json' => $this->deckJson(['segment' => 'Spicy', 'intensity_level' => 6, 'meta_title' => str_repeat('x', 61)])])
             ->assertNotified('The JSON needs fixing');
 
         $this->assertSame(0, Deck::count());

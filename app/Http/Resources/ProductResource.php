@@ -35,6 +35,7 @@ class ProductResource extends JsonResource
                 'id' => $deck->id,
                 'deck_code' => $deck->deck_code,
                 'slug' => $deck->slug,
+                'title' => $deck->title,
             ])->values()),
         ];
     }

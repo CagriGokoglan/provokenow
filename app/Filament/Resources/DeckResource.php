@@ -74,7 +74,8 @@ class DeckResource extends Resource
                         ->columnSpanFull(),
                     Select::make('segment')->options(DeckSegment::class)->required()->native(false),
                     Select::make('intensity_level')
-                        ->options([1 => '1 · Gentle', 2 => '2 · Warm', 3 => '3 · Hot', 4 => '4 · Intense'])
+                        ->options(Deck::INTENSITY_OPTIONS)
+                        ->helperText('1 = lowest, 5 = highest.')
                         ->required()
                         ->native(false),
                     Textarea::make('core_theme_keywords')
@@ -184,7 +185,7 @@ class DeckResource extends Resource
                 Tables\Columns\TextColumn::make('segment')->label('Level')->badge()->sortable(),
                 Tables\Columns\TextColumn::make('categories.name')->label('Categories')->badge()->color('gray')->limitList(3)->toggleable(),
                 Tables\Columns\TextColumn::make('intensity_level')->label('Intensity')->sortable()->alignCenter()
-                    ->formatStateUsing(fn (int $state) => str_repeat('●', $state).str_repeat('○', 4 - $state)),
+                    ->formatStateUsing(fn (int $state) => str_repeat('●', $state).str_repeat('○', Deck::MAX_INTENSITY - $state)),
                 Tables\Columns\ToggleColumn::make('is_active')->label('Active'),
                 Tables\Columns\TextColumn::make('cards_count')->counts('cards')->label('Cards')->alignCenter()
                     ->color(fn (int $state) => $state === 50 ? 'success' : 'warning')
@@ -194,7 +195,7 @@ class DeckResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('segment')->label('Level')->options(DeckSegment::class),
                 Tables\Filters\SelectFilter::make('categories')->relationship('categories', 'name')->multiple()->preload(),
-                Tables\Filters\SelectFilter::make('intensity_level')->options([1 => '1', 2 => '2', 3 => '3', 4 => '4']),
+                Tables\Filters\SelectFilter::make('intensity_level')->options(Deck::INTENSITY_OPTIONS),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Active'),
             ])
             ->actions([

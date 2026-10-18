@@ -44,7 +44,7 @@ class DeckSampleSeeder extends Seeder
 
     /**
      * Placeholder split, proportional to DECK_COUNT: four equal bands, one per level,
-     * intensity matching the level (1–4). Real values are set per deck.
+     * intensity matching the level (1–4 of 5). Real values are set per deck.
      *
      * @return array{DeckSegment, int}
      */

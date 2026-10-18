@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Home;
 
+use App\Enums\DeckSegment;
 use App\Models\ClubSignup;
 use App\Models\Deck;
 use App\Models\HeroSlide;
@@ -60,6 +61,21 @@ class HomepageTest extends TestCase
         $this->assertCount(InstagramPost::HOMEPAGE_LIMIT, $data['instagram']['posts']);
         $this->assertSame('https://www.instagram.com/p/POST1/', $data['instagram']['posts'][0]['url']);
         $this->assertSame('provokenow', $data['instagram']['handle']);
+    }
+
+    public function test_draw_a_card_pool_is_light_and_medium_cards_after_the_first_six(): void
+    {
+        $light = Deck::factory()->segment(DeckSegment::LightIgnition, 1)->withCards(10)->create();
+        $medium = Deck::factory()->segment(DeckSegment::MediumSpice, 3)->withCards(10)->create();
+        Deck::factory()->segment(DeckSegment::Taboo, 5)->withCards(10)->create();
+        Deck::factory()->inactive()->withCards(10)->create();
+
+        $pool = collect($this->getJson('/api/v1/home')->assertOk()->json('data.showcase_cards'));
+
+        $this->assertCount(8, $pool, 'Cards 7-10 of the two live Light/Medium decks.');
+        $this->assertEqualsCanonicalizing([$light->id, $medium->id], $pool->pluck('deck.id')->unique()->values()->all());
+        $this->assertTrue($pool->every(fn ($item) => $item['card']['card_number'] > 6));
+        $this->assertSame(10, $pool->first()['total_cards']);
     }
 
     public function test_slides_without_an_image_are_served_and_carry_their_video(): void

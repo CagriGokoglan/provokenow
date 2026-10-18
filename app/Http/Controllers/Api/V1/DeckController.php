@@ -33,7 +33,7 @@ class DeckController extends Controller
             // Web-app slugs: light-ignition | medium-spice | advanced | taboo
             'level' => ['sometimes', 'string', Rule::in(array_map(fn (DeckSegment $s) => $s->slug(), DeckSegment::cases()))],
             'category' => ['sometimes', 'string', 'max:80'],
-            'intensity_level' => ['sometimes', 'integer', 'between:1,4'],
+            'intensity_level' => ['sometimes', 'integer', 'between:1,'.Deck::MAX_INTENSITY],
             'sort' => ['sometimes', Rule::in(self::SORTS)],
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
         ]);
@@ -97,7 +97,7 @@ class DeckController extends Controller
             ->get();
 
         $totalCards = $deck->cards()->count();
-        $products = $deck->products()->active()->with('decks:id,deck_code,slug')->get();
+        $products = $deck->products()->active()->with('decks:id,deck_code,slug,title')->get();
         ['digital' => $digital, 'physical' => $physical] = $editions->editionsFor($deck);
         $owned = $editions->ownership($user, $deck);
         $credit = $physical ? min($owned['digital_credit_cents'], $physical->effectivePriceCents()) : 0;

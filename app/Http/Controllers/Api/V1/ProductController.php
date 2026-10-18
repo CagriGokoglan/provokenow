@@ -40,7 +40,7 @@ class ProductController extends Controller
 
         // The store never lists a deck's digital edition; that is sold on the deck page.
         $products = Product::storefront()
-            ->with(['decks:id,deck_code,slug', 'category:id,name,slug'])
+            ->with(['decks:id,deck_code,slug,title', 'category:id,name,slug'])
             ->when($filters['product_type'] ?? null, fn ($q, $type) => $q->where('product_type', $type))
             ->when($filters['deck_code'] ?? null, fn ($q, $code) => $q->whereHas('decks', fn ($d) => $d->where('slug', strtolower($code))->orWhere('deck_code', strtoupper($code))))
             ->when($filters['category'] ?? null, fn ($q, $slug) => $q->whereHas('category', fn ($c) => $c->where('slug', $slug)->where('is_active', true)))

@@ -67,7 +67,7 @@ JSON;
             'title' => ['required', 'string', 'max:255'],
             'slug' => ['nullable', 'alpha_dash', 'max:255', Rule::notIn(Deck::reservedSlugs()), Rule::unique('decks', 'slug')->ignore($existing?->getKey())],
             'segment' => ['required', Rule::enum(DeckSegment::class)],
-            'intensity_level' => ['required', 'integer', 'between:1,4'],
+            'intensity_level' => ['required', 'integer', 'between:1,'.Deck::MAX_INTENSITY],
             'core_theme_keywords' => ['nullable', 'string', 'max:1000'],
             'fantasy_categories' => ['nullable', 'array'],
             'fantasy_categories.*' => ['string', 'max:80'],
