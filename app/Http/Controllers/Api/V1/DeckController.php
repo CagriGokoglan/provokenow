@@ -32,11 +32,14 @@ class DeckController extends Controller
             'segment' => ['sometimes', Rule::enum(DeckSegment::class)],
             // Web-app slugs: light-ignition | medium-spice | advanced | taboo
             'level' => ['sometimes', 'string', Rule::in(array_map(fn (DeckSegment $s) => $s->slug(), DeckSegment::cases()))],
-            'category' => ['sometimes', 'string', 'max:80'],
+            // One fantasy slug, or several comma-separated (a deck matches if it has any of them).
+            'category' => ['sometimes', 'string', 'max:1000'],
             'intensity_level' => ['sometimes', 'integer', 'between:1,'.Deck::MAX_INTENSITY],
             'sort' => ['sometimes', Rule::in(self::SORTS)],
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
         ]);
+
+        $categories = array_slice(array_values(array_filter(array_map('trim', explode(',', $filters['category'] ?? '')))), 0, 20);
 
         // Metadata columns only: no cards, no AI prompt.
         $decks = Deck::active()
@@ -44,7 +47,7 @@ class DeckController extends Controller
             ->with(['categories' => fn ($q) => $q->active()->select('deck_categories.id', 'name', 'slug')])
             ->when($filters['segment'] ?? null, fn ($q, $segment) => $q->where('segment', $segment))
             ->when($filters['level'] ?? null, fn ($q, $level) => $q->where('segment', DeckSegment::fromSlug($level)->value))
-            ->when($filters['category'] ?? null, fn ($q, $slug) => $q->whereHas('categories', fn ($c) => $c->where('slug', $slug)->where('is_active', true)))
+            ->when($categories, fn ($q, $slugs) => $q->whereHas('categories', fn ($c) => $c->whereIn('slug', $slugs)->where('is_active', true)))
             ->when($filters['intensity_level'] ?? null, fn ($q, $level) => $q->where('intensity_level', $level))
             ->addSelect([
                 // Lowest price of an active product that unlocks this deck ("From $19").

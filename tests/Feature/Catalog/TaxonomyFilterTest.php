@@ -61,6 +61,7 @@ class TaxonomyFilterTest extends TestCase
         $this->assertSame(['DECK-001', 'DECK-002'], $codes('category=roleplay'));
         $this->assertSame(['DECK-002'], $codes('level=taboo&category=roleplay'));
         $this->assertSame([], $codes('category=hidden'), 'Hidden categories cannot be used to filter.');
+        $this->assertSame(['DECK-002'], $codes('category=hidden,roleplay&level=taboo'), 'Several themes: a deck matches any of them.');
         $this->getJson('/api/v1/decks?level=extreme')->assertUnprocessable();
 
         $deck = collect($this->getJson('/api/v1/decks')->json('data.items'))->firstWhere('deck_code', 'DECK-002');
