@@ -24,6 +24,7 @@ class PublicConfigController extends Controller
             'tracking' => [
                 'meta_pixel_id' => $tracking['meta_pixel_id'],
                 'gtm_container_id' => $tracking['gtm_container_id'],
+                'ga4_measurement_id' => $tracking['ga4_measurement_id'],
                 'google_site_verification' => $tracking['google_site_verification'],
             ],
             'locale' => [

@@ -99,6 +99,8 @@ return [
     'tracking' => [
         'meta_pixel_id' => env('META_PIXEL_ID'),
         'gtm_container_id' => env('GTM_CONTAINER_ID'),
+        // Google Analytics 4 (gtag.js). Loaded by the web app after cookie consent.
+        'ga4_measurement_id' => env('GA4_MEASUREMENT_ID', 'G-0RRFRJNEYD'),
         'google_site_verification' => env('GOOGLE_SITE_VERIFICATION'),
     ],
 
