@@ -56,6 +56,29 @@ class CatalogEditionsAdminTest extends TestCase
         Livewire::test(ListProducts::class)->assertCanNotSeeTableRecords([$product]);
     }
 
+    public function test_the_digital_sale_price_is_set_and_cleared_on_the_deck(): void
+    {
+        $deck = Deck::factory()->create(['deck_code' => 'DECK-008', 'digital_price_cents' => 1299, 'is_digital_sale_active' => true]);
+        $product = $deck->fresh()->digitalProduct;
+
+        Livewire::test(EditDeck::class, ['record' => $deck->getRouteKey()])
+            ->assertFormSet(['digital_price_cents' => '12.99', 'digital_sale_price_cents' => null])
+            ->fillForm(['digital_sale_price_cents' => '9.00'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+        $this->assertSame([1299, 900, 900], [$product->fresh()->price_cents, $product->fresh()->sale_price_cents, $product->fresh()->effectivePriceCents()]);
+
+        // Never at or above the price.
+        Livewire::test(EditDeck::class, ['record' => $deck->getRouteKey()])
+            ->fillForm(['digital_sale_price_cents' => '15.00'])
+            ->call('save')
+            ->assertHasFormErrors(['digital_sale_price_cents']);
+
+        Livewire::test(EditDeck::class, ['record' => $deck->getRouteKey()])->fillForm(['digital_sale_price_cents' => null])->call('save');
+        $this->assertNull($product->fresh()->sale_price_cents);
+        $this->assertSame(1299, $product->fresh()->effectivePriceCents(), 'No sale: the site shows the price.');
+    }
+
     public function test_a_physical_boxed_game_links_one_deck_that_has_no_box_yet(): void
     {
         $free = Deck::factory()->create(['deck_code' => 'DECK-001']);

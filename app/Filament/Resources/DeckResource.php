@@ -93,7 +93,7 @@ class DeckResource extends Resource
                 Tab::make('Editions & Pricing')->icon('heroicon-o-banknotes')->columns(3)->schema([
                     Section::make('Digital edition')
                         ->description('Sold on the deck page and unlocked instantly in the buyer\'s library. Changes apply as soon as you save.')
-                        ->columns(3)
+                        ->columns(4)
                         ->schema([
                             Toggle::make('is_digital_sale_active')
                                 ->label('Sell the digital deck')
@@ -102,6 +102,10 @@ class DeckResource extends Resource
                             Fields::money('digital_price_cents')
                                 ->label('Digital price')
                                 ->required(fn (Get $get) => (bool) $get('is_digital_sale_active')),
+                            Fields::money('digital_sale_price_cents')
+                                ->label('Digital sale price')
+                                ->lt('digital_price_cents')
+                                ->helperText('Optional. Shown instead of the price while set; leave empty for no sale.'),
                             TextInput::make('digital_sku')
                                 ->label('Digital SKU')
                                 ->maxLength(64)

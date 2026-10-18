@@ -73,6 +73,7 @@ JSON;
             'how_to_play' => ['nullable', 'string', 'max:2000'],
             'who_its_for' => ['nullable', 'string', 'max:2000'],
             'digital_price' => ['nullable', 'numeric', 'min:0', 'max:9999'],
+            'digital_sale_price' => ['nullable', 'numeric', 'min:0', 'lt:digital_price'],
             'digital_sku' => [
                 'nullable', 'string', 'max:64',
                 Rule::unique('decks', 'digital_sku')->ignore($existing?->getKey()),
@@ -107,6 +108,7 @@ JSON;
                 'how_to_play' => $data['how_to_play'] ?? null,
                 'who_its_for' => $data['who_its_for'] ?? null,
                 'digital_price_cents' => isset($data['digital_price']) ? (int) round($data['digital_price'] * 100) : null,
+                'digital_sale_price_cents' => isset($data['digital_sale_price']) ? (int) round($data['digital_sale_price'] * 100) : null,
                 'digital_sku' => $data['digital_sku'] ?? null,
                 'is_digital_sale_active' => isset($data['digital_price']) && ($data['sell_digital'] ?? true),
                 'faqs' => array_values($data['faqs'] ?? []) ?: null,
@@ -140,8 +142,10 @@ JSON;
             $input['core_theme_keywords'] = implode(', ', array_filter(array_map('trim', $input['core_theme_keywords'])));
         }
 
-        if (is_string($input['digital_price'] ?? null)) {
-            $input['digital_price'] = str_replace(['$', ','], ['', '.'], trim($input['digital_price']));
+        foreach (['digital_price', 'digital_sale_price'] as $key) {
+            if (is_string($input[$key] ?? null)) {
+                $input[$key] = trim($input[$key]) === '' ? null : str_replace(['$', ','], ['', '.'], trim($input[$key]));
+            }
         }
 
         foreach (['whats_inside', 'how_to_play', 'who_its_for', 'digital_sku', 'meta_title', 'meta_description', 'canonical_url'] as $key) {

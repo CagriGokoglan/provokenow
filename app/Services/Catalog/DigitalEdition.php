@@ -43,6 +43,10 @@ class DigitalEdition
             'name' => "{$deck->title} — Digital Deck",
             'sku' => $deck->digital_sku ?: 'DIG-'.$deck->deck_code,
             'price_cents' => $deck->digital_price_cents ?? $product->price_cents,
+            // The deck's sale price, only while it is below the price (empty = no sale).
+            'sale_price_cents' => $deck->digital_sale_price_cents !== null && $deck->digital_sale_price_cents < ($deck->digital_price_cents ?? PHP_INT_MAX)
+                ? $deck->digital_sale_price_cents
+                : null,
             'requires_shipping' => false,
             'is_active' => $deck->is_active && $deck->is_digital_sale_active && $deck->digital_price_cents !== null,
         ]);

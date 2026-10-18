@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'whats_inside', 'how_to_play', 'who_its_for',
-    'digital_price_cents', 'digital_sku', 'is_digital_sale_active',
+    'digital_price_cents', 'digital_sale_price_cents', 'digital_sku', 'is_digital_sale_active',
     'is_active',
     'meta_title', 'meta_description', 'canonical_url', 'og_image', 'faqs',
     'card_front_bg_url', 'card_back_bg_url',
@@ -49,6 +49,7 @@ class Deck extends Model
             'is_active' => 'boolean',
             'faqs' => 'array',
             'digital_price_cents' => 'integer',
+            'digital_sale_price_cents' => 'integer',
             'is_digital_sale_active' => 'boolean',
         ];
     }
@@ -94,7 +95,7 @@ class Deck extends Model
         // (wasRecentlyCreated stays true on the instance, so creation and later edits are separate hooks.)
         static::created(fn (Deck $deck) => app(DigitalEdition::class)->sync($deck));
         static::updated(function (Deck $deck) {
-            if ($deck->wasChanged(['digital_price_cents', 'digital_sku', 'is_digital_sale_active', 'title', 'is_active'])) {
+            if ($deck->wasChanged(['digital_price_cents', 'digital_sale_price_cents', 'digital_sku', 'is_digital_sale_active', 'title', 'is_active'])) {
                 app(DigitalEdition::class)->sync($deck);
             }
         });
