@@ -39,7 +39,7 @@ return [
             'reset_password' => '/auth/reset-password',
         ],
         // Admin edits ping the web app to refresh its cache (shared secret; unset = off).
-        // On the VPS point it straight at the local Next.js process: http://127.0.0.1:3000/revalidate
+        // On the VPS point it straight at the local Next.js process: http://127.0.0.1:3100/revalidate
         'revalidate_url' => env('FRONTEND_REVALIDATE_URL', rtrim((string) env('FRONTEND_URL', 'https://provokenow.com'), '/').'/revalidate'),
         'revalidate_secret' => env('FRONTEND_REVALIDATE_SECRET'),
     ],
