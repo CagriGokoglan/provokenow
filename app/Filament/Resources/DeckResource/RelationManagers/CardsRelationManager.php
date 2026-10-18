@@ -5,6 +5,7 @@ namespace App\Filament\Resources\DeckResource\RelationManagers;
 use App\Models\Card;
 use App\Models\Deck;
 use App\Services\Catalog\CardImporter;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -49,6 +50,19 @@ class CardsRelationManager extends RelationManager
             Textarea::make('content_payload.Setting_and_Scenario')->label('Setting & Scenario')->rows(3)->columnSpanFull(),
             Textarea::make('content_payload.Action_Task')->label('Action / Task')->rows(4)->columnSpanFull(),
             Textarea::make('content_payload.Safety_and_Consent_Note')->label('Safety & Consent Note')->rows(2)->columnSpanFull(),
+            Checkbox::make('is_preview')
+                ->label('Use as Public Preview / Sample Question')
+                ->helperText('Shown free to everyone: deck page samples, preview play and the homepage. Up to '.Deck::previewLimit().' per deck.')
+                ->rules([
+                    fn (?Card $record) => function (string $attribute, mixed $value, \Closure $fail) use ($record) {
+                        $others = Card::where('deck_id', $this->getOwnerRecord()->getKey())->where('is_preview', true)
+                            ->when($record, fn ($q) => $q->whereKeyNot($record->getKey()))->count();
+                        if ($value && $others >= Deck::previewLimit()) {
+                            $fail('This deck already has '.Deck::previewLimit().' preview cards. Untick one of them first.');
+                        }
+                    },
+                ])
+                ->columnSpanFull(),
         ]);
     }
 
@@ -56,10 +70,19 @@ class CardsRelationManager extends RelationManager
     {
         return $table
             ->defaultSort('card_number')
+            ->description(fn () => $this->previewStatus())
             ->paginated([10, 25, 50])
             ->defaultPaginationPageOption(50)
             ->columns([
                 Tables\Columns\TextColumn::make('card_number')->label('#')->sortable()->width('4rem'),
+                Tables\Columns\IconColumn::make('is_preview')
+                    ->label('Preview')
+                    ->boolean()
+                    ->trueIcon('heroicon-s-eye')
+                    ->falseIcon('heroicon-o-minus')
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->alignCenter(),
                 Tables\Columns\TextColumn::make('title')->searchable()->weight('medium'),
                 Tables\Columns\TextColumn::make('content_payload.Action_Task')->label('Action / Task')->limit(70)->wrap(),
                 Tables\Columns\IconColumn::make('has_safety_note')
@@ -74,6 +97,21 @@ class CardsRelationManager extends RelationManager
                     ->mutateFormDataUsing(fn (array $data) => $this->withCardId($data)),
             ])
             ->actions([
+                Action::make('togglePreview')
+                    ->label(fn (Card $record) => $record->is_preview ? 'Remove preview' : 'Use as preview')
+                    ->icon(fn (Card $record) => $record->is_preview ? 'heroicon-o-eye-slash' : 'heroicon-o-eye')
+                    ->color(fn (Card $record) => $record->is_preview ? 'gray' : 'warning')
+                    ->action(function (Card $record) {
+                        if (! $record->is_preview && Card::otherPreviewCount($record) >= Deck::previewLimit()) {
+                            Notification::make()->warning()
+                                ->title('Only '.Deck::previewLimit().' preview cards per deck')
+                                ->body('Untick one of the current preview cards first.')
+                                ->send();
+
+                            return;
+                        }
+                        $record->update(['is_preview' => ! $record->is_preview]);
+                    }),
                 Tables\Actions\EditAction::make()
                     // Merge so payload keys not shown in the form (custom columns) are preserved.
                     ->using(function (Card $record, array $data) {
@@ -146,6 +184,16 @@ class CardsRelationManager extends RelationManager
                     ['Content-Type' => 'application/json'],
                 );
             });
+    }
+
+    private function previewStatus(): string
+    {
+        $picked = $this->getOwnerRecord()->cards()->where('is_preview', true)->orderBy('card_number')->pluck('card_number');
+        $limit = Deck::previewLimit();
+
+        return $picked->isEmpty()
+            ? "Preview cards: none picked. The deck page and preview play use cards 1–{$limit}, and this deck is NOT shown on the homepage."
+            : "Preview cards: #{$picked->join(', #')} ({$picked->count()} / {$limit}). Used on the deck page, in preview play and on the homepage.";
     }
 
     private function withCardId(array $data): array

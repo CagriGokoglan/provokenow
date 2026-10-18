@@ -63,18 +63,22 @@ class HomepageTest extends TestCase
         $this->assertSame('provokenow', $data['instagram']['handle']);
     }
 
-    public function test_draw_a_card_pool_is_light_and_medium_cards_after_the_first_six(): void
+    public function test_draw_a_card_pool_is_the_picked_preview_cards_of_light_and_medium_decks(): void
     {
         $light = Deck::factory()->segment(DeckSegment::LightIgnition, 1)->withCards(10)->create();
         $medium = Deck::factory()->segment(DeckSegment::MediumSpice, 3)->withCards(10)->create();
-        Deck::factory()->segment(DeckSegment::Taboo, 5)->withCards(10)->create();
-        Deck::factory()->inactive()->withCards(10)->create();
+        $unpicked = Deck::factory()->segment(DeckSegment::LightIgnition, 1)->withCards(10)->create();
+        $taboo = Deck::factory()->segment(DeckSegment::Taboo, 5)->withCards(10)->create();
+        $light->cards()->whereIn('card_number', [4, 8])->update(['is_preview' => true]);
+        $medium->cards()->where('card_number', 2)->update(['is_preview' => true]);
+        $taboo->cards()->where('card_number', 5)->update(['is_preview' => true]);
 
         $pool = collect($this->getJson('/api/v1/home')->assertOk()->json('data.showcase_cards'));
 
-        $this->assertCount(8, $pool, 'Cards 7-10 of the two live Light/Medium decks.');
+        $this->assertCount(3, $pool, 'Only picked preview cards; the deck without picks is never dealt.');
         $this->assertEqualsCanonicalizing([$light->id, $medium->id], $pool->pluck('deck.id')->unique()->values()->all());
-        $this->assertTrue($pool->every(fn ($item) => $item['card']['card_number'] > 6));
+        $this->assertNotContains($unpicked->id, $pool->pluck('deck.id'));
+        $this->assertEqualsCanonicalizing([2, 4, 8], $pool->pluck('card.card_number')->all());
         $this->assertSame(10, $pool->first()['total_cards']);
     }
 

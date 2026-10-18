@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 #[Fillable([
@@ -63,6 +64,47 @@ class Deck extends Model
             'digital_sale_price_cents' => 'integer',
             'is_digital_sale_active' => 'boolean',
         ];
+    }
+
+    /**
+     * Cards that could be the public preview: the hand-picked ones plus the lowest-numbered
+     * (the fallback). Eager-load this, then call previewFrom() to choose.
+     */
+    public function previewCandidates(): HasMany
+    {
+        return $this->hasMany(Card::class)
+            ->where(fn ($q) => $q->where('is_preview', true)->orWhere('card_number', '<=', static::previewLimit()))
+            ->orderBy('card_number');
+    }
+
+    /** How many cards the public preview shows (and how many an admin may pick). */
+    public static function previewLimit(): int
+    {
+        return max(1, (int) config('provoke.deck_preview_cards'));
+    }
+
+    /**
+     * The public preview / sample cards: the admin's picks (in card order); with none or one
+     * picked, the lowest-numbered cards fill the rest.
+     *
+     * @param  Collection<int, Card>|null  $candidates  previewCandidates, when already loaded
+     * @return Collection<int, Card>
+     */
+    public function previewCards(?Collection $candidates = null): Collection
+    {
+        $candidates ??= $this->relationLoaded('previewCandidates') ? $this->previewCandidates : $this->previewCandidates()->get();
+        $picked = $candidates->where('is_preview', true)->sortBy('card_number')->take(static::previewLimit());
+        $fill = $candidates->whereNotIn('id', $picked->modelKeys())->sortBy('card_number')->take(static::previewLimit() - $picked->count());
+
+        return $picked->concat($fill)->sortBy('card_number')->values();
+    }
+
+    /** Only decks with hand-picked preview cards are dealt on the homepage. */
+    public function hasPickedPreview(?Collection $candidates = null): bool
+    {
+        $candidates ??= $this->relationLoaded('previewCandidates') ? $this->previewCandidates : $this->previewCandidates()->get();
+
+        return $candidates->contains('is_preview', true);
     }
 
     public function cards(): HasMany
