@@ -86,8 +86,7 @@ return [
             ['/', 'daily', '1.0'],
             ['/decks', 'daily', '0.9'],
             ['/store', 'daily', '0.9'],
-            ['/about', 'monthly', '0.5'],
-            ['/faq', 'monthly', '0.5'],
+            // Add /about, /faq… here once those pages exist on the web app.
         ],
 
         // Never emitted in the sitemap, even if misconfigured above.
