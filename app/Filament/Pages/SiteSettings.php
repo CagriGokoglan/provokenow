@@ -3,9 +3,11 @@
 namespace App\Filament\Pages;
 
 use App\Models\SiteSetting;
+use App\Services\Seo\Faqs;
 use App\Support\YouTube;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -22,7 +24,7 @@ class SiteSettings extends Page implements HasForms
     use InteractsWithForms;
 
     /** Setting keys this page owns. */
-    private const KEYS = ['home_video', 'club', 'instagram', 'socials', 'brand_story', 'discreet_shipping_badge_text'];
+    private const KEYS = ['home_video', 'club', 'instagram', 'socials', 'brand_story', 'discreet_shipping_badge_text', Faqs::DECK_DEFAULTS, Faqs::PRODUCT_DEFAULTS];
 
     protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
@@ -92,6 +94,15 @@ class SiteSettings extends Page implements HasForms
                     ->helperText('Leave empty to use the default shown above.'),
             ]),
 
+            Section::make('Default FAQs')
+                ->description('Used on any deck or product page whose own FAQ tab is empty (also as FAQPage rich results).')
+                ->collapsible()
+                ->columns(2)
+                ->schema([
+                    static::faqList(Faqs::DECK_DEFAULTS, 'Decks'),
+                    static::faqList(Faqs::PRODUCT_DEFAULTS, 'Store products'),
+                ]),
+
             Section::make('Footer')->schema([
                 Textarea::make('brand_story')->label('Brand story')->rows(3)->maxLength(500),
                 Grid::make(3)->schema(collect(['instagram', 'tiktok', 'x', 'pinterest', 'youtube'])->map(
@@ -115,6 +126,22 @@ class SiteSettings extends Page implements HasForms
         }
 
         Notification::make()->success()->title('Site settings saved')->send();
+    }
+
+    private static function faqList(string $key, string $label): Repeater
+    {
+        return Repeater::make($key)
+            ->label($label)
+            ->schema([
+                TextInput::make('question')->required()->maxLength(200),
+                Textarea::make('answer')->required()->rows(3)->maxLength(1500),
+            ])
+            ->reorderable()
+            ->collapsible()
+            ->collapsed()
+            ->itemLabel(fn (array $state) => $state['question'] ?? null)
+            ->defaultItems(0)
+            ->addActionLabel('Add question');
     }
 
     /** @return list<Action> */

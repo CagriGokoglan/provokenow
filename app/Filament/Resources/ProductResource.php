@@ -205,6 +205,7 @@ class ProductResource extends Resource
                         ]),
                 ]),
 
+                Fields::faqTab('Shown on the product page and as FAQPage rich results. Empty = the default product FAQs (Site Settings).'),
                 Fields::seoTab('seo/products'),
             ]),
         ]);

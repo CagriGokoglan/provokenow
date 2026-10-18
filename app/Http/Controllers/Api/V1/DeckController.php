@@ -132,6 +132,8 @@ class DeckController extends Controller
                 'final_physical_price_cents' => $physical ? $physical->effectivePriceCents() - $credit : null,
             ],
             'cards' => CardResource::collection($cards),
+            // Shown on the page (same list as the FAQPage schema).
+            'faqs' => $schema->deckFaqs($deck, $cards->firstWhere('card_number', 1), $totalCards, $products),
             'seo' => $seo->forDeck($deck),
             // Built from the public preview card only, regardless of the viewer's access.
             'schema_json_ld' => $schema->forDeck($deck, $cards->firstWhere('card_number', 1), $totalCards, $products),

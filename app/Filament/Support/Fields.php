@@ -5,6 +5,7 @@ namespace App\Filament\Support;
 use App\Services\Seo\SeoMetadataService;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -38,6 +39,28 @@ final class Fields
      *
      * @param  list<Component>  $extra
      */
+    /** Unlimited, reorderable Q&A list (shown on the page and as FAQPage schema). */
+    public static function faqTab(string $help): Tab
+    {
+        return Tab::make('FAQ')
+            ->icon('heroicon-o-question-mark-circle')
+            ->schema([
+                Repeater::make('faqs')
+                    ->hiddenLabel()
+                    ->schema([
+                        TextInput::make('question')->required()->maxLength(200),
+                        Textarea::make('answer')->required()->rows(3)->maxLength(1500),
+                    ])
+                    ->reorderable()
+                    ->collapsible()
+                    ->cloneable()
+                    ->itemLabel(fn (array $state) => $state['question'] ?? null)
+                    ->defaultItems(0)
+                    ->addActionLabel('Add question')
+                    ->helperText($help),
+            ]);
+    }
+
     public static function seoTab(string $uploadDirectory, array $extra = []): Tab
     {
         return Tab::make('SEO & GEO')

@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Enums\DeckSegment;
 use App\Models\Deck;
+use App\Models\Post;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\User;
@@ -62,6 +63,11 @@ final class FrontendUrl
             'hash' => sha1($user->getEmailForVerification()),
             ...$query,
         ]);
+    }
+
+    public static function post(Post $post): string
+    {
+        return self::path('post', ['{slug}' => $post->slug]);
     }
 
     public static function resetPassword(string $token, string $email): string

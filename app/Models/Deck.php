@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords',
     'digital_price_cents', 'digital_sku', 'is_digital_sale_active',
     'is_active',
-    'meta_title', 'meta_description', 'canonical_url', 'og_image', 'seo_faq',
+    'meta_title', 'meta_description', 'canonical_url', 'og_image', 'faqs',
     'card_front_bg_url', 'card_back_bg_url',
 ])]
 class Deck extends Model
@@ -47,7 +47,7 @@ class Deck extends Model
             'segment' => DeckSegment::class,
             'intensity_level' => 'integer',
             'is_active' => 'boolean',
-            'seo_faq' => 'array',
+            'faqs' => 'array',
             'digital_price_cents' => 'integer',
             'is_digital_sale_active' => 'boolean',
         ];

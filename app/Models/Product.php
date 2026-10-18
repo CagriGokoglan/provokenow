@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'sku', 'name', 'slug', 'product_type', 'requires_shipping', 'linked_deck_id', 'price_cents', 'sale_price_cents',
-    'stock_quantity', 'is_active', 'description', 'metadata',
+    'stock_quantity', 'is_active', 'description', 'faqs', 'metadata',
     'meta_title', 'meta_description', 'canonical_url', 'og_image',
     'product_category_id', 'is_featured', 'is_new_arrival', 'is_boxed_game', 'sort_order',
 ])]
@@ -53,6 +53,7 @@ class Product extends Model
             'stock_quantity' => 'integer',
             'is_active' => 'boolean',
             'metadata' => 'array',
+            'faqs' => 'array',
             'requires_shipping' => 'boolean',
             'is_featured' => 'boolean',
             'is_new_arrival' => 'boolean',

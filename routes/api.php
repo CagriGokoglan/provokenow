@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\Account\AddressController;
 use App\Http\Controllers\Api\V1\Auth\AuthController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetController;
+use App\Http\Controllers\Api\V1\BlogController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\ClubController;
@@ -54,6 +55,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::get('decks', [DeckController::class, 'index'])->name('decks.index');
         Route::get('products', [ProductController::class, 'index'])->name('products.index');
         Route::get('products/{slug}', [ProductController::class, 'show'])->name('products.show');
+        Route::get('blog/posts', [BlogController::class, 'index'])->name('blog.index');
+        Route::get('blog/categories', [BlogController::class, 'categories'])->name('blog.categories');
+        Route::get('blog/posts/{slug}', [BlogController::class, 'show'])->name('blog.show');
     });
     Route::post('club/subscribe', [ClubController::class, 'subscribe'])->middleware('throttle:club')->name('club.subscribe');
 

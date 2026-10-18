@@ -32,6 +32,7 @@ return [
             // Clean listing URLs: an intensity level and a store category.
             'deck_level' => '/decks/{level}',
             'store_category' => '/store/{slug}',
+            'post' => '/blog/{slug}',
             // Signed-in reading view for an owned deck (linked from order emails).
             'library_deck' => '/decks/{code}/play',
             // Account emails link to web pages, which call the API.
@@ -86,6 +87,7 @@ return [
             ['/', 'daily', '1.0'],
             ['/decks', 'daily', '0.9'],
             ['/store', 'daily', '0.9'],
+            ['/blog', 'weekly', '0.7'],
             // Add /about, /faq… here once those pages exist on the web app.
         ],
 

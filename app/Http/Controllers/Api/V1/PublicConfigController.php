@@ -40,7 +40,7 @@ class PublicConfigController extends Controller
             ],
             'footer_categories' => ProductCategory::active()->where('show_in_footer', true)->get(['name', 'slug']),
             // Site-wide Organization entity for the frontend's root layout.
-            'organization_schema_json_ld' => $schema->graph([$schema->organization()]),
+            'organization_schema_json_ld' => $schema->graph([$schema->organization(), $schema->website()]),
         ], 'Public configuration.')->header('Cache-Control', 'public, max-age=300');
     }
 }

@@ -11,7 +11,6 @@ use App\Models\Product;
 use Closure;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Tabs;
@@ -128,24 +127,8 @@ class DeckResource extends Resource
                         ->acceptedFileTypes(['image/svg+xml', 'image/webp', 'image/png', 'image/jpeg'])
                         ->disk('public')->directory('decks/artwork')->visibility('public')->maxSize(2048),
                 ]),
-                Fields::seoTab('seo/decks', [
-                    Section::make('FAQ for answer engines')
-                        ->description('Shown in FAQPage structured data. Never paste paid card content here.')
-                        ->collapsible()
-                        ->schema([
-                            Repeater::make('seo_faq')
-                                ->hiddenLabel()
-                                ->schema([
-                                    TextInput::make('question')->required()->maxLength(200),
-                                    Textarea::make('answer')->required()->rows(3)->maxLength(1000),
-                                ])
-                                ->reorderable()
-                                ->collapsible()
-                                ->itemLabel(fn (array $state) => $state['question'] ?? null)
-                                ->defaultItems(0)
-                                ->addActionLabel('Add question'),
-                        ]),
-                ]),
+                Fields::faqTab('Shown on the deck page and as FAQPage rich results. Empty = the default deck FAQs (Site Settings). Never paste paid card content here.'),
+                Fields::seoTab('seo/decks'),
             ]),
         ]);
     }

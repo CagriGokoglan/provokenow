@@ -71,7 +71,7 @@ class SeoSchemaTest extends TestCase
 
         $long = $this->getJson('/api/v1/products/blindfold')->json('data');
         $this->assertLessThanOrEqual(60, mb_strlen($long['seo']['title']));
-        $this->assertStringEndsWith('…', $long['seo']['title']);
+        $this->assertStringEndsWith('… | PROVOKE NOW', $long['seo']['title'], 'The keyword part is shortened, the brand stays last.');
         $this->assertLessThanOrEqual(155, mb_strlen($long['seo']['description']));
         $this->assertSame('https://schema.org/OutOfStock', $this->node($long['schema_json_ld'], 'Product')['offers']['availability']);
 
@@ -88,7 +88,7 @@ class SeoSchemaTest extends TestCase
             'deck_code' => 'DECK-021',
             'title' => 'After Midnight',
             'core_theme_keywords' => 'anticipation, role play, trust',
-            'seo_faq' => [['question' => 'Is After Midnight good for long-distance couples?', 'answer' => 'Yes, 20 cards work over video.']],
+            'faqs' => [['question' => 'Is After Midnight good for long-distance couples?', 'answer' => 'Yes, 20 cards work over video.']],
         ]);
         Card::factory()->for($deck)->create(['card_number' => 1, 'title' => 'The Invitation', 'content_payload' => [
             'Setting_and_Scenario' => 'Dim the lights.', 'Action_Task' => 'Write a three-word invitation.',
@@ -106,7 +106,7 @@ class SeoSchemaTest extends TestCase
 
         $data = $this->getJson('/api/v1/decks/DECK-021')->assertOk()->assertJsonPath('data.is_locked', false)->json('data');
 
-        $this->assertSame('After Midnight | PROVOKE NOW', $data['seo']['title']);
+        $this->assertSame('After Midnight: Card Game for Couples | PROVOKE NOW', $data['seo']['title']);
         $this->assertSame('https://provokenow.com/decks/deck-021', $data['seo']['canonical_url']);
         $this->assertStringContainsString('Medium Spice', $data['seo']['description']);
 

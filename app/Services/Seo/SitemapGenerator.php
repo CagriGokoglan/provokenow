@@ -4,6 +4,7 @@ namespace App\Services\Seo;
 
 use App\Enums\DeckSegment;
 use App\Models\Deck;
+use App\Models\Post;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Support\FrontendUrl;
@@ -66,6 +67,16 @@ class SitemapGenerator
                 'lastmod' => $category->updated_at?->toAtomString(),
                 'changefreq' => 'daily',
                 'priority' => '0.8',
+            ];
+        }
+
+        foreach (Post::published()->orderByDesc('published_at')->cursor() as $post) {
+            yield [
+                'loc' => FrontendUrl::post($post),
+                'lastmod' => $post->updated_at?->toAtomString(),
+                'changefreq' => 'monthly',
+                'priority' => $post->is_pillar ? '0.8' : '0.6',
+                'image' => $post->featuredImageUrl(),
             ];
         }
 

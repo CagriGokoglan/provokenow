@@ -5,6 +5,7 @@ namespace App\Services\Seo;
 use App\Enums\ProductType;
 use App\Models\Card;
 use App\Models\Deck;
+use App\Models\Post;
 use App\Models\Product;
 use App\Support\FrontendUrl;
 use Illuminate\Support\Collection;
@@ -57,7 +58,7 @@ class SchemaGeneratorService
             'url' => $url,
             'category' => $this->categoryFor($product->product_type),
             'brand' => ['@type' => 'Brand', 'name' => config('provoke.brand.name')],
-            'offers' => [
+            'offers' => array_filter([
                 '@type' => 'Offer',
                 'url' => $url,
                 'priceCurrency' => config('provoke.commerce.currency'),
@@ -65,7 +66,13 @@ class SchemaGeneratorService
                 'availability' => $product->isPurchasable() ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
                 'itemCondition' => 'https://schema.org/NewCondition',
                 'seller' => ['@id' => $this->organizationId()],
-            ],
+                // Shipping is complimentary on every order.
+                'shippingDetails' => $product->requiresShipping() ? [
+                    '@type' => 'OfferShippingDetails',
+                    'shippingRate' => ['@type' => 'MonetaryAmount', 'value' => '0', 'currency' => config('provoke.commerce.currency')],
+                    'shippingLabel' => config('provoke.commerce.shipping_label'),
+                ] : null,
+            ]),
         ], fn ($v) => $v !== null);
     }
 
@@ -130,7 +137,53 @@ class SchemaGeneratorService
                 ['Store', FrontendUrl::to('/store')],
                 [$product->name, $url],
             ]),
+            $this->faqPage(app(Faqs::class)->forProduct($product), $url),
         ]);
+    }
+
+    /** BlogPosting + breadcrumbs + FAQPage for a Journal post. */
+    public function forPost(Post $post, array $faqs): array
+    {
+        $url = FrontendUrl::post($post);
+        $author = $post->author_name
+            ? array_filter(['@type' => 'Person', 'name' => $post->author_name, 'jobTitle' => $post->author_role])
+            : ['@id' => $this->organizationId()];
+
+        return $this->graph([
+            array_filter([
+                '@type' => 'BlogPosting',
+                '@id' => "{$url}#article",
+                'headline' => mb_substr($post->title, 0, 110),
+                'description' => $post->seo_description ?: $post->excerpt,
+                'image' => $post->featuredImageUrl() ? [$post->featuredImageUrl()] : null,
+                'datePublished' => $post->published_at?->toAtomString(),
+                'dateModified' => $post->updated_at?->toAtomString(),
+                'author' => $author,
+                'publisher' => ['@id' => $this->organizationId()],
+                'mainEntityOfPage' => $url,
+                'articleSection' => $post->category?->name,
+                'inLanguage' => 'en',
+            ], fn ($v) => $v !== null),
+            $this->breadcrumbs([
+                ['Home', FrontendUrl::to('/')],
+                ['Journal', FrontendUrl::to('/blog')],
+                [$post->title, $url],
+            ]),
+            $this->faqPage($faqs, $url),
+        ]);
+    }
+
+    /** The site itself (sits next to Organization on every page). */
+    public function website(): array
+    {
+        return [
+            '@type' => 'WebSite',
+            '@id' => FrontendUrl::to('/').'#website',
+            'url' => FrontendUrl::to('/'),
+            'name' => config('provoke.brand.name'),
+            'inLanguage' => 'en',
+            'publisher' => ['@id' => $this->organizationId()],
+        ];
     }
 
     /**
@@ -142,11 +195,7 @@ class SchemaGeneratorService
         $brand = config('provoke.brand.name');
         $keywords = implode(', ', $deck->themeKeywords());
 
-        $faqs = collect((array) $deck->seo_faq)
-            ->filter(fn ($f) => is_array($f) && filled($f['question'] ?? null) && filled($f['answer'] ?? null))
-            ->map(fn (array $f) => ['question' => (string) $f['question'], 'answer' => (string) $f['answer']])
-            ->values()
-            ->all();
+        $faqs = app(Faqs::class)->forDeck($deck);
 
         $faqs[] = [
             'question' => "What is {$deck->title}?",

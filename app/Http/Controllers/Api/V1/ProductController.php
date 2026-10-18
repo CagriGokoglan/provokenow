@@ -9,6 +9,7 @@ use App\Http\Resources\ProductResource;
 use App\Http\Resources\UpsellOfferResource;
 use App\Models\Product;
 use App\Services\Commerce\UpsellEngine;
+use App\Services\Seo\Faqs;
 use App\Services\Seo\SchemaGeneratorService;
 use App\Services\Seo\SeoMetadataService;
 use App\Support\ApiResponse;
@@ -75,6 +76,7 @@ class ProductController extends Controller
         return ApiResponse::success([
             'product' => new ProductResource($product),
             'recommendations' => UpsellOfferResource::collection($upsell->recommendationsFor($product)),
+            'faqs' => app(Faqs::class)->forProduct($product),
             'seo' => $seo->forProduct($product),
             'schema_json_ld' => $schema->forProduct($product),
         ], 'Product retrieved.');
