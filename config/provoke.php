@@ -65,6 +65,9 @@ return [
     // Shown in the shipping email when the admin leaves the estimated delivery date empty.
     'default_delivery_estimate' => env('DEFAULT_DELIVERY_ESTIMATE', '3–7 business days'),
 
+    // Cards anyone can play before buying (the deck's first N cards).
+    'deck_preview_cards' => (int) env('DECK_PREVIEW_CARDS', 2),
+
     'auth' => [
         // Minutes an email verification link stays valid (reset links: auth.passwords.users.expire).
         'verification_expire' => (int) env('EMAIL_VERIFICATION_EXPIRE', 1440),

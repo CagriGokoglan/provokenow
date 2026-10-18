@@ -27,6 +27,12 @@ class DeckResource extends JsonResource
             'core_theme' => $this->core_theme_keywords,
             'core_theme_keywords' => $this->themeKeywords(),
             'vault_protected' => $this->isVaultProtected(),
+            // Deck page sections (written in the admin; null = the web app's generated text).
+            'page_content' => $this->when($request->routeIs('v1.decks.show'), fn () => [
+                'whats_inside' => $this->whats_inside,
+                'how_to_play' => $this->how_to_play,
+                'who_its_for' => $this->who_its_for,
+            ]),
             // Only present on the catalogue listing (computed there).
             'from_price_cents' => $this->when(array_key_exists('from_price_cents', $this->resource->getAttributes()), fn () => $this->resource->getAttributes()['from_price_cents'] === null ? null : (int) $this->resource->getAttributes()['from_price_cents']),
             'card_front_bg_url' => MediaUrl::resolve($this->card_front_bg_url),

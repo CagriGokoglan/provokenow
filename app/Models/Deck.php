@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
-    'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords',
+    'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'whats_inside', 'how_to_play', 'who_its_for',
     'digital_price_cents', 'digital_sku', 'is_digital_sale_active',
     'is_active',
     'meta_title', 'meta_description', 'canonical_url', 'og_image', 'faqs',

@@ -73,6 +73,23 @@ class DeckResource extends Resource
                         ->label('Active (visible in the catalogue)')
                         ->default(false),
                 ]),
+                Tab::make('Page Content')->icon('heroicon-o-document-text')->schema([
+                    Textarea::make('whats_inside')
+                        ->label("What's inside")
+                        ->rows(5)
+                        ->maxLength(2000)
+                        ->helperText('Empty = generated from the card count, intensity and theme keywords. A blank line starts a new paragraph.'),
+                    Textarea::make('how_to_play')
+                        ->label('How to play')
+                        ->rows(5)
+                        ->maxLength(2000)
+                        ->helperText('Empty = the standard four steps. Lines starting with "- " become a list.'),
+                    Textarea::make('who_its_for')
+                        ->label("Who it's for")
+                        ->rows(5)
+                        ->maxLength(2000)
+                        ->helperText("Empty = generated from the deck's level."),
+                ]),
                 Tab::make('Editions & Pricing')->icon('heroicon-o-banknotes')->columns(3)->schema([
                     Section::make('Digital edition')
                         ->description('Sold on the deck page and unlocked instantly in the buyer\'s library. Changes apply as soon as you save.')

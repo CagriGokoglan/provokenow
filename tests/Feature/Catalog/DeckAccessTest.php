@@ -30,10 +30,24 @@ class DeckAccessTest extends TestCase
             ->assertJsonPath('data.is_locked', true)
             ->assertJsonPath('data.lock_reason', 'not_entitled')
             ->assertJsonPath('data.total_cards', 50)
-            ->assertJsonCount(1, 'data.cards')
-            ->assertJsonPath('data.cards.0.card_number', 1);
+            ->assertJsonCount(2, 'data.cards')
+            ->assertJsonPath('data.cards.0.card_number', 1)
+            ->assertJsonPath('data.cards.1.card_number', 2);
 
-        $this->assertStringNotContainsString('"Card 2"', $response->getContent());
+        // The free preview is the first two cards; nothing beyond them is serialised.
+        $this->assertStringNotContainsString('"Card 3"', $response->getContent());
+    }
+
+    public function test_deck_page_content_is_written_per_deck(): void
+    {
+        $this->deck->update(['whats_inside' => '50 cards and a ribbon.', 'how_to_play' => "- Draw\n- Read"]);
+
+        $this->getJson('/api/v1/decks/DECK-001')
+            ->assertJsonPath('data.deck.page_content.whats_inside', '50 cards and a ribbon.')
+            ->assertJsonPath('data.deck.page_content.how_to_play', "- Draw\n- Read")
+            ->assertJsonPath('data.deck.page_content.who_its_for', null);
+
+        $this->getJson('/api/v1/decks')->assertJsonMissingPath('data.items.0.page_content');
     }
 
     public function test_authenticated_user_without_entitlement_sees_preview_only(): void
@@ -43,7 +57,7 @@ class DeckAccessTest extends TestCase
         $this->getJson('/api/v1/decks/deck-001')
             ->assertOk()
             ->assertJsonPath('data.is_locked', true)
-            ->assertJsonCount(1, 'data.cards');
+            ->assertJsonCount(2, 'data.cards');
     }
 
     public function test_entitled_user_sees_all_50_cards(): void
@@ -67,7 +81,7 @@ class DeckAccessTest extends TestCase
         $user->entitlements()->create(['deck_id' => $this->deck->id, 'granted_at' => now()->subYear(), 'expires_at' => now()->subDay()]);
         Sanctum::actingAs($user);
 
-        $this->getJson('/api/v1/decks/DECK-001')->assertJsonPath('data.is_locked', true)->assertJsonCount(1, 'data.cards');
+        $this->getJson('/api/v1/decks/DECK-001')->assertJsonPath('data.is_locked', true)->assertJsonCount(2, 'data.cards');
         $this->getJson('/api/v1/user/entitlements')->assertOk()->assertJsonCount(0, 'data.entitlements');
     }
 
@@ -128,7 +142,7 @@ class DeckAccessTest extends TestCase
         $this->getJson('/api/v1/decks/DECK-050')
             ->assertJsonPath('data.is_locked', true)
             ->assertJsonPath('data.lock_reason', 'vault_locked')
-            ->assertJsonCount(1, 'data.cards');
+            ->assertJsonCount(2, 'data.cards');
         // Non-protected decks are unaffected.
         $this->getJson('/api/v1/decks/DECK-001')->assertJsonPath('data.lock_reason', 'not_entitled');
 

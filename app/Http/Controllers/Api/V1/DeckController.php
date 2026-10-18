@@ -92,9 +92,9 @@ class DeckController extends Controller
         };
         $isLocked = $lockReason !== null;
 
-        // Locked: the public preview (card 1) only. The full deck is never serialised.
+        // Locked: the public preview (the first N cards) only. The full deck is never serialised.
         $cards = $deck->cards()
-            ->when($isLocked, fn ($q) => $q->where('card_number', 1))
+            ->when($isLocked, fn ($q) => $q->where('card_number', '<=', (int) config('provoke.deck_preview_cards')))
             ->get();
 
         $totalCards = $deck->cards()->count();
