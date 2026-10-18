@@ -21,7 +21,7 @@ class LegalPagesTest extends TestCase
         $this->seed(LegalPageSeeder::class);
 
         $this->assertSame(
-            ['terms-of-service', 'privacy-policy', 'refund-policy', 'shipping-policy', 'contact', 'age-disclaimer'],
+            ['terms-of-service', 'privacy-policy', 'refund-policy', 'shipping-policy', 'contact', 'age-disclaimer', 'about-us', 'brand-standard'],
             LegalPage::orderBy('sort_order')->pluck('slug')->all(),
         );
         $this->assertStringContainsString('GKLN ENTERPRISES LLC', LegalPage::firstWhere('slug', 'terms-of-service')->content);
@@ -29,11 +29,14 @@ class LegalPagesTest extends TestCase
         $this->assertStringContainsString('non-refundable', LegalPage::firstWhere('slug', 'refund-policy')->content);
         $this->assertStringContainsString('3–5 business days', LegalPage::firstWhere('slug', 'shipping-policy')->content);
         $this->assertStringContainsString('support@provokenow.com', LegalPage::firstWhere('slug', 'contact')->content);
+        $this->assertStringContainsString('GKLN ENTERPRISES LLC', LegalPage::firstWhere('slug', 'about-us')->content);
+        $this->assertStringContainsString('Charges appear on your statement as **GKLN ENTERPRISES LLC**', LegalPage::firstWhere('slug', 'about-us')->content);
+        $this->assertStringContainsString('PROVOKE NOW™', LegalPage::firstWhere('slug', 'brand-standard')->content);
 
         LegalPage::firstWhere('slug', 'privacy-policy')->update(['content' => 'Edited by the admin.']);
         $this->seed(LegalPageSeeder::class);
         $this->assertSame('Edited by the admin.', LegalPage::firstWhere('slug', 'privacy-policy')->content);
-        $this->assertSame(6, LegalPage::count());
+        $this->assertSame(8, LegalPage::count());
     }
 
     public function test_api_serves_published_pages_as_safe_html(): void
@@ -42,7 +45,7 @@ class LegalPagesTest extends TestCase
         LegalPage::firstWhere('slug', 'age-disclaimer')->update(['is_published' => false]);
         LegalPage::firstWhere('slug', 'terms-of-service')->update(['content' => "## Rules\n\n<script>alert(1)</script>\n\n[x](javascript:alert(1)) **bold**"]);
 
-        $this->getJson('/api/v1/legal-pages')->assertOk()->assertJsonCount(5, 'data.pages')->assertJsonPath('data.pages.0.slug', 'terms-of-service');
+        $this->getJson('/api/v1/legal-pages')->assertOk()->assertJsonCount(7, 'data.pages')->assertJsonPath('data.pages.0.slug', 'terms-of-service');
 
         $html = $this->getJson('/api/v1/legal-pages/terms-of-service')
             ->assertOk()

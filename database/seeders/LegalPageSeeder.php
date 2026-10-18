@@ -293,6 +293,87 @@ Parents and guardians can block access to adult websites using parental-control 
 Email [{$email}](mailto:{$email}).
 MD,
             ],
+            [
+                'slug' => 'about-us',
+                'title' => 'About Us',
+                'seo_title' => "About Us | {$brand}",
+                'seo_description' => "{$brand} creates conversation and intimacy card games for couples, delivered with discretion. Owned and operated by {$company}.",
+                'content' => <<<MD
+**{$brand}** creates card games and intimate lifestyle pieces for couples who want more connection, more play and more honest conversation. The brand is owned and operated by **{$company}**.
+
+## Our philosophy: dark luxury
+
+We believe intimacy deserves the same care as any luxury ritual. Our decks are written like a slow evening: candlelight, card stock, velvet tones and words chosen to open a conversation rather than rush it. Every deck is built around four principles:
+
+- **Consent first, always.** Every card can be skipped, and every player can stop at any time.
+- **Crafted, not generated.** Every deck is written and curated by our team, with a clear intensity level from gentle to taboo.
+- **For two people, not an audience.** Our games are designed for private use between consenting adults.
+- **Beautiful enough to keep.** From the digital card designs to our printed boxes, everything is made to feel like a gift.
+
+## Discreet by design
+
+- Physical orders ship in a **plain, unbranded black box** with no product names or descriptions on the outside.
+- Charges appear on your statement as **{$descriptor}**.
+- Digital decks unlock instantly in your private account library and can be protected with a vault passcode.
+
+## Who we are
+
+{$brand} is a brand of {$company}. We serve adults aged 18 and over worldwide.
+
+## Talk to us
+
+- **Email:** [{$email}](mailto:{$email})
+- **Contact form:** [Contact Us](/legal/contact)
+
+We answer every message within 1 business day.
+MD,
+            ],
+            [
+                'slug' => 'brand-standard',
+                'title' => 'Brand Standard & Trademark Notice',
+                'seo_title' => "Brand Standard & Trademark Notice | {$brand}",
+                'seo_description' => "How the {$brand} name is written, who owns it, and how our card decks and content are protected.",
+                'content' => <<<MD
+This notice sets out the single, official way our brand is presented, and how **{$company}** protects the {$brand} name and content.
+
+## 1. The brand name
+
+The one correct form of the brand name is:
+
+**{$brand}**
+
+- Two words, written in capital letters, separated by a single space.
+- In running text the name always appears as "{$brand}", never as "Provoke Now", "ProvokeNow", "Provoke-Now", "PN" or any abbreviation, translation or variation.
+- The stylised wordmark (PROVOKE in capitals with *now* in italic lowercase) is used only in our official logo artwork. It is a design treatment of the same name, not a different name.
+
+## 2. Ownership and trademark
+
+{$brand}™, the {$brand} logo and wordmark, and the names of our decks and products are trademarks of **{$company}**. They may not be used in any domain name, social media account, product, advertisement or other material without our prior written permission, and may not be used in any way that suggests an endorsement or connection that does not exist.
+
+## 3. Copyright in our card decks
+
+Every {$brand} card deck, including each card's title, scenario, invitation and consent note, together with the deck descriptions, artwork, card designs, photographs and website content, is an original work protected by copyright and owned by {$company} or its licensors. All rights are reserved.
+
+Purchasing a deck gives you a personal, non-transferable licence to use it privately, as described in our [Terms of Service](/legal/terms-of-service). You may not copy, publish, resell, translate, record, adapt or redistribute any card or deck, in whole or in part, or use our content to train or build any artificial-intelligence model or dataset.
+
+## 4. Billing descriptor
+
+For transparency, every purchase from {$brand} appears on your card or bank statement as:
+
+**{$descriptor}**
+
+This is the legal name of the company that owns and operates {$brand}. If you see this name on your statement and have a question about the charge, contact [{$email}](mailto:{$email}) before contacting your bank.
+
+## 5. Reporting misuse
+
+If you believe someone is using the {$brand} name, logo or content without permission, or is selling counterfeit or copied decks, please tell us at [{$email}](mailto:{$email}).
+
+## 6. Contact
+
+{$company}  
+Email: [{$email}](mailto:{$email})
+MD,
+            ],
         ];
     }
 }
