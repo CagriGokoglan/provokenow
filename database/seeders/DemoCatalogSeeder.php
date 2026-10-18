@@ -131,12 +131,12 @@ class DemoCatalogSeeder extends Seeder
         $this->call(TaxonomySeeder::class);
 
         $tags = DeckCategory::pluck('id', 'slug');
-        $decks['DECK-001']->categories()->syncWithoutDetaching([$tags['sensory']]);
-        $decks['DECK-020']->categories()->syncWithoutDetaching([$tags['roleplay'], $tags['sensory']]);
-        $decks['DECK-021']->categories()->syncWithoutDetaching([$tags['roleplay'], $tags['dominant-submissive']]);
-        $decks['DECK-040']->categories()->syncWithoutDetaching([$tags['bdsm'], $tags['dominant-submissive']]);
+        $decks['DECK-001']->categories()->syncWithoutDetaching([$tags['sensory-touch']]);
+        $decks['DECK-020']->categories()->syncWithoutDetaching([$tags['roleplay-fantasy'], $tags['sensory-touch']]);
+        $decks['DECK-021']->categories()->syncWithoutDetaching([$tags['roleplay-fantasy'], $tags['dominant-submissive']]);
+        $decks['DECK-040']->categories()->syncWithoutDetaching([$tags['bdsm-impact'], $tags['dominant-submissive']]);
         $decks['DECK-041']->update(['segment' => DeckSegment::Taboo, 'intensity_level' => 4]);
-        $decks['DECK-041']->categories()->syncWithoutDetaching([$tags['bdsm']]);
+        $decks['DECK-041']->categories()->syncWithoutDetaching([$tags['bdsm-impact']]);
 
         $cats = ProductCategory::pluck('id', 'slug');
         Product::where('slug', 'silk-blindfold')->update(['product_category_id' => $cats['bdsm-tools-costumes'], 'is_featured' => true, 'is_new_arrival' => true]);

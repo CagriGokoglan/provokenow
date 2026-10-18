@@ -24,12 +24,23 @@ class TaxonomySeeder extends Seeder
         'bdsm-tools-costumes' => 'BDSM Tools & Costumes',
     ];
 
-    /** Fantasy / content tags for decks. */
+    /** Fantasy / content tags for decks (the /decks "Fantasy" filter), in display order. */
     public const DECK_CATEGORIES = [
-        'bdsm' => 'BDSM',
-        'roleplay' => 'Roleplay',
-        'sensory' => 'Sensory',
+        'sensory-touch' => 'Sensory & Touch',
+        'roleplay-fantasy' => 'Roleplay & Fantasy',
+        'bdsm-impact' => 'BDSM & Impact',
         'dominant-submissive' => 'Dominant / Submissive',
+        'deep-talk-connection' => 'Deep Talk & Connection',
+        'exhibitionism-public-play' => 'Exhibitionism & Public Play',
+        'taboo-alternative' => 'Taboo & Alternative',
+        'hotwife-cuckolding' => 'Hotwife & Cuckolding',
+        'teasing-edging' => 'Teasing & Edging',
+        'intimate-exploration-body-mapping' => 'Intimate Exploration & Body Mapping',
+        'long-distance-digital' => 'Long-Distance & Digital',
+        'beginner-gifting' => 'Beginner & Gifting',
+        'creator-camera-play' => 'Creator & Camera Play',
+        'star-persona-simulation' => 'Star & Persona Simulation',
+        'taboo-performance-exhibition' => 'Taboo Performance & Exhibition',
     ];
 
     public function run(): void

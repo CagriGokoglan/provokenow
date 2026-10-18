@@ -22,13 +22,14 @@ class TaxonomyFilterTest extends TestCase
     public function test_four_levels_and_admin_categories_are_exposed_in_order(): void
     {
         $this->seed(TaxonomySeeder::class);
-        DeckCategory::where('slug', 'sensory')->update(['is_active' => false]);
+        DeckCategory::where('slug', 'sensory-touch')->update(['is_active' => false]);
 
         $data = $this->getJson('/api/v1/taxonomies')->assertOk()->json('data');
 
         $this->assertSame(['light-ignition', 'medium-spice', 'advanced', 'taboo'], array_column($data['deck_levels'], 'slug'));
         $this->assertSame(['Light Ignition', 'Medium Spice', 'Advanced', 'Taboo'], array_column($data['deck_levels'], 'label'));
-        $this->assertSame(['bdsm', 'roleplay', 'dominant-submissive'], array_column($data['deck_categories'], 'slug'));
+        $this->assertSame(array_values(array_diff(array_keys(TaxonomySeeder::DECK_CATEGORIES), ['sensory-touch'])), array_column($data['deck_categories'], 'slug'), 'In admin order, inactive ones hidden.');
+        $this->assertSame('Hotwife & Cuckolding', $data['deck_categories'][6]['name']);
         $this->assertSame(array_keys(TaxonomySeeder::PRODUCT_CATEGORIES), array_column($data['product_categories'], 'slug'));
     }
 

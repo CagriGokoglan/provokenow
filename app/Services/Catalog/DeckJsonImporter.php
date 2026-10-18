@@ -27,7 +27,7 @@ class DeckJsonImporter
   "segment": "Light Ignition",
   "intensity_level": 1,
   "core_theme_keywords": ["curiosity", "laughter", "first questions"],
-  "fantasy_categories": ["Sensory"],
+  "fantasy_categories": ["Sensory & Touch", "Deep Talk & Connection"],
   "whats_inside": "Paragraph one.\n\nParagraph two.",
   "how_to_play": "- Step one\n- Step two\n- Step three",
   "who_its_for": "Who this deck is for, in 2-4 sentences.",
