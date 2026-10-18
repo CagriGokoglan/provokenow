@@ -33,6 +33,10 @@ class PublicConfigController extends Controller
             ],
             'socials' => array_filter((array) SiteSetting::value('socials', []), fn ($url) => is_string($url) && str_starts_with($url, 'https://')),
             'brand_story' => SiteSetting::value('brand_story'),
+            'shipping' => [
+                'label' => config('provoke.commerce.shipping_label'),
+                'badge_text' => SiteSetting::value('discreet_shipping_badge_text') ?: config('provoke.commerce.shipping_badge_text'),
+            ],
             'footer_categories' => ProductCategory::active()->where('show_in_footer', true)->get(['name', 'slug']),
             // Site-wide Organization entity for the frontend's root layout.
             'organization_schema_json_ld' => $schema->graph([$schema->organization()]),

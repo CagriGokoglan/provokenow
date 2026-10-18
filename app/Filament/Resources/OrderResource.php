@@ -102,7 +102,7 @@ class OrderResource extends Resource
                 Section::make('Totals')->columnSpan(1)->schema([
                     TextEntry::make('subtotal_cents')->label('Subtotal')->state(fn (Order $o) => $money($o, $o->subtotal_cents))->inlineLabel(),
                     TextEntry::make('discount_cents')->label('Bundle discounts')->state(fn (Order $o) => '−'.$money($o, $o->discount_cents))->inlineLabel(),
-                    TextEntry::make('shipping_cents')->label('Shipping')->state(fn (Order $o) => $money($o, $o->shipping_cents))->inlineLabel(),
+                    TextEntry::make('shipping_cents')->label('Shipping')->state(fn (Order $o) => $o->shipping_cents === 0 ? 'Complimentary' : $money($o, $o->shipping_cents))->inlineLabel(),
                     TextEntry::make('tax_cents')->label('Tax')->state(fn (Order $o) => $money($o, $o->tax_cents))->inlineLabel(),
                     TextEntry::make('total_cents')->label('Total')->state(fn (Order $o) => $money($o, $o->total_cents))->inlineLabel()->weight('bold'),
                 ]),

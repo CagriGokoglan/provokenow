@@ -21,6 +21,7 @@ class OrderResource extends JsonResource
             'discount_cents' => $this->discount_cents,
             'tax_cents' => $this->tax_cents,
             'shipping_cents' => $this->shipping_cents,
+            'shipping_label' => ($this->metadata['requires_shipping'] ?? false) ? config('provoke.commerce.shipping_label') : null,
             'total_cents' => $this->total_cents,
             'customer_email' => $this->customer_email,
             'shipping_address' => $this->shipping_address,

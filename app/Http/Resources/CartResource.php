@@ -41,6 +41,7 @@ class CartResource extends JsonResource
                 'digital_credit_cents' => $priced['digital_credit_cents'],
                 'tax_cents' => $priced['tax_cents'],
                 'shipping_cents' => $priced['shipping_cents'],
+                'shipping_label' => $priced['shipping_label'],
                 'total_cents' => $priced['total_cents'],
                 'is_estimate' => true,
             ],

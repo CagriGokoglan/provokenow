@@ -79,7 +79,7 @@ class StripeGateway implements PaymentGateway
             'shipping_options' => $requiresShipping ? [[
                 'shipping_rate_data' => [
                     'type' => 'fixed_amount',
-                    'display_name' => $order->shipping_cents === 0 ? 'Complimentary shipping' : 'Standard shipping',
+                    'display_name' => $order->shipping_cents === 0 ? config('provoke.commerce.shipping_label') : 'Shipping',
                     'fixed_amount' => ['amount' => $order->shipping_cents, 'currency' => $currency],
                 ],
             ]] : null,

@@ -142,7 +142,7 @@ class StripeCheckoutTest extends TestCase
         $this->assertSame('stripe', $order->payment_gateway);
         $this->assertStringStartsWith('cs_test_', $order->metadata['stripe_session_id']);
         $this->assertNull($order->shipping_address, 'Stripe collects the address.');
-        $this->assertSame(1900 + 3315 + 995, $order->total_cents);
+        $this->assertSame(1900 + 3315, $order->total_cents, 'Shipping is always complimentary.');
         Queue::assertPushed(SendMetaConversionEvent::class, fn ($j) => $j->event['event_name'] === 'InitiateCheckout');
     }
 
@@ -152,8 +152,9 @@ class StripeCheckoutTest extends TestCase
         $params = app(StripeGateway::class)->sessionParams($order);
 
         $lines = array_sum(array_map(fn ($l) => $l['price_data']['unit_amount'] * $l['quantity'], $params['line_items']));
-        $shipping = $params['shipping_options'][0]['shipping_rate_data']['fixed_amount']['amount'];
-        $this->assertSame($order->total_cents, $lines + $shipping);
+        $rate = $params['shipping_options'][0]['shipping_rate_data'];
+        $this->assertSame([0, 'Complimentary Discreet Express Shipping'], [$rate['fixed_amount']['amount'], $rate['display_name']]);
+        $this->assertSame($order->total_cents, $lines);
         $this->assertSame(['US', 'GB'], $params['shipping_address_collection']['allowed_countries']);
         $this->assertSame('ava@example.com', $params['customer_email']);
         $this->assertSame($order->id, $params['metadata']['order_id']);

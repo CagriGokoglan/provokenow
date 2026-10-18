@@ -122,8 +122,9 @@ class CheckoutFulfillmentTest extends TestCase
 
         $order = $this->postJson('/api/v1/checkout/intent', ['email' => 'guest@example.com', 'shipping_address' => self::ADDRESS], $guest)
             ->assertCreated()
-            ->assertJsonPath('data.order.shipping_cents', 995)
-            ->assertJsonPath('data.order.total_cents', 4800 + 995)
+            ->assertJsonPath('data.order.shipping_cents', 0)
+            ->assertJsonPath('data.order.shipping_label', 'Complimentary Discreet Express Shipping')
+            ->assertJsonPath('data.order.total_cents', 4800)
             ->json('data.order');
 
         Sanctum::actingAs($this->admin);

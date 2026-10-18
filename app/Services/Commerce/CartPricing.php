@@ -19,7 +19,7 @@ class CartPricing
      *
      * @return array{
      *     lines: list<array{item: CartItem, unit_price_cents: int, line_subtotal_cents: int, applied_discount_cents: int, digital_credit_cents: int, line_total_cents: int, available: bool}>,
-     *     subtotal_cents: int, discount_cents: int, digital_credit_cents: int, tax_cents: int, shipping_cents: int, total_cents: int,
+     *     subtotal_cents: int, discount_cents: int, digital_credit_cents: int, tax_cents: int, shipping_cents: int, shipping_label: ?string, total_cents: int,
      *     requires_shipping: bool, currency: string
      * }
      */
@@ -72,9 +72,8 @@ class CartPricing
         $requiresShipping = $cart->items->contains(fn (CartItem $i) => $i->product->requiresShipping());
 
         $tax = intdiv($taxable * (int) config('provoke.commerce.tax_rate_bps') + 5000, 10000);
-        $shipping = $requiresShipping && $taxable < (int) config('provoke.commerce.free_shipping_threshold_cents')
-            ? (int) config('provoke.commerce.shipping_flat_cents')
-            : 0;
+        // Complimentary on every order: never a shipping fee.
+        $shipping = 0;
 
         return [
             'lines' => $lines,
@@ -83,6 +82,7 @@ class CartPricing
             'digital_credit_cents' => array_sum(array_column($lines, 'digital_credit_cents')),
             'tax_cents' => $tax,
             'shipping_cents' => $shipping,
+            'shipping_label' => $requiresShipping ? (string) config('provoke.commerce.shipping_label') : null,
             'total_cents' => $taxable + $tax + $shipping,
             'requires_shipping' => $requiresShipping,
             'currency' => (string) config('provoke.commerce.currency'),

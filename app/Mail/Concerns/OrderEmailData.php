@@ -3,6 +3,7 @@
 namespace App\Mail\Concerns;
 
 use App\Models\Order;
+use App\Models\SiteSetting;
 use Illuminate\Mail\Mailables\Address;
 
 /** Shared, display-ready order data for the order emails. */
@@ -41,7 +42,8 @@ trait OrderEmailData
             ])->values()->all(),
             'subtotal' => $this->money($order, $order->subtotal_cents),
             'discount' => $order->discount_cents > 0 ? $this->money($order, $order->discount_cents) : null,
-            'shipping' => $this->money($order, $order->shipping_cents),
+            'shipping' => $order->shipping_cents === 0 ? 'Complimentary' : $this->money($order, $order->shipping_cents),
+            'shipping_badge' => SiteSetting::value('discreet_shipping_badge_text') ?: config('provoke.commerce.shipping_badge_text'),
             'tax' => $this->money($order, $order->tax_cents),
             'total' => $this->money($order, $order->total_cents),
             'requires_shipping' => (bool) ($order->metadata['requires_shipping'] ?? false),

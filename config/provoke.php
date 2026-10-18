@@ -108,9 +108,11 @@ return [
         // Flat estimate in basis points (825 = 8.25%). Replace with a tax provider before launch.
         'tax_rate_bps' => (int) env('TAX_RATE_BPS', 0),
 
-        // Applied when the cart contains anything that ships.
-        'shipping_flat_cents' => (int) env('SHIPPING_FLAT_CENTS', 995),
-        'free_shipping_threshold_cents' => (int) env('FREE_SHIPPING_THRESHOLD_CENTS', 15000),
+        // Shipping is always complimentary: product prices absorb logistics. This label names the
+        // (free) shipping line on carts, orders, Stripe Checkout and emails.
+        'shipping_label' => 'Complimentary Discreet Express Shipping',
+        // Default for the admin-editable badge (Site Settings → Shipping).
+        'shipping_badge_text' => 'Complimentary Worldwide Express Shipping in 100% Unbranded Black Packaging',
 
         'max_line_quantity' => 10,
     ],

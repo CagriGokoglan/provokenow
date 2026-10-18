@@ -22,7 +22,7 @@ class SiteSettings extends Page implements HasForms
     use InteractsWithForms;
 
     /** Setting keys this page owns. */
-    private const KEYS = ['home_video', 'club', 'instagram', 'socials', 'brand_story'];
+    private const KEYS = ['home_video', 'club', 'instagram', 'socials', 'brand_story', 'discreet_shipping_badge_text'];
 
     protected static ?string $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
@@ -82,6 +82,14 @@ class SiteSettings extends Page implements HasForms
             Section::make('Instagram')->columns(2)->schema([
                 TextInput::make('instagram.handle')->prefix('@')->maxLength(60),
                 TextInput::make('instagram.profile_url')->url()->placeholder('https://www.instagram.com/provokenow/'),
+            ]),
+
+            Section::make('Shipping')->description('Shipping is always complimentary. This reassurance appears on product pages, the cart and order emails.')->schema([
+                TextInput::make('discreet_shipping_badge_text')
+                    ->label('Discreet shipping badge')
+                    ->maxLength(160)
+                    ->placeholder(config('provoke.commerce.shipping_badge_text'))
+                    ->helperText('Leave empty to use the default shown above.'),
             ]),
 
             Section::make('Footer')->schema([
