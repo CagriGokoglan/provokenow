@@ -25,15 +25,19 @@ class DeckEditions
     public function editionsFor(Deck $deck): array
     {
         $products = Product::active()
-            ->whereHas('decks', fn ($q) => $q->whereKey($deck->getKey()))
-            ->with('decks:id')
+            ->where(fn ($q) => $q->where('linked_deck_id', $deck->getKey())->orWhereHas('decks', fn ($d) => $d->whereKey($deck->getKey())))
+            ->with('decks:id,deck_code', 'category:id,name,slug')
             ->get();
 
+        // The deck's own linked products first (set in the admin), then anything else unlocking it.
+        $linked = fn (Product $p) => $p->linked_deck_id === $deck->getKey() ? 0 : 1;
+
         return [
-            'digital' => $products->where('product_type', ProductType::DigitalDeck)->sortBy(fn (Product $p) => $p->effectivePriceCents())->first(),
-            // Prefer the product flagged as the printed game box, then any shipped product unlocking the deck.
+            'digital' => $products->where('product_type', ProductType::DigitalDeck)
+                ->sortBy(fn (Product $p) => [$linked($p), $p->effectivePriceCents()])
+                ->first(),
             'physical' => $products->filter(fn (Product $p) => $this->isPhysicalEdition($p))
-                ->sortBy(fn (Product $p) => [$p->is_boxed_game ? 0 : 1, $p->effectivePriceCents()])
+                ->sortBy(fn (Product $p) => [$p->product_type === ProductType::PodPhysicalDeck ? $linked($p) : 2, $p->is_boxed_game ? 0 : 1, $p->effectivePriceCents()])
                 ->first(),
         ];
     }

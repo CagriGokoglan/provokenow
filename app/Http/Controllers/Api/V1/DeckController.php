@@ -6,6 +6,7 @@ use App\Enums\DeckSegment;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CardResource;
 use App\Http\Resources\DeckResource;
+use App\Http\Resources\ProductResource;
 use App\Models\Deck;
 use App\Services\Access\VaultService;
 use App\Services\Commerce\DeckEditions;
@@ -110,8 +111,20 @@ class DeckController extends Controller
             'total_cards' => $totalCards,
             // Digital vs physical edition, and the viewer's position (all false/0 for guests).
             'editions' => [
-                'digital' => $digital ? ['product_slug' => $digital->slug, 'product_id' => $digital->id, 'price_cents' => $digital->effectivePriceCents()] : null,
-                'physical' => $physical ? ['product_slug' => $physical->slug, 'product_id' => $physical->id, 'price_cents' => $physical->effectivePriceCents()] : null,
+                'digital' => $digital ? [
+                    'product_slug' => $digital->slug,
+                    'product_id' => $digital->id,
+                    'price_cents' => $digital->effectivePriceCents(),
+                    'product' => new ProductResource($digital),
+                ] : null,
+                'physical' => $physical ? [
+                    'product_slug' => $physical->slug,
+                    'product_id' => $physical->id,
+                    'price_cents' => $physical->effectivePriceCents(),
+                    'requires_shipping' => $physical->requiresShipping(),
+                    'in_stock' => $physical->hasStockFor(1),
+                    'product' => new ProductResource($physical),
+                ] : null,
                 'user_owns_digital' => $owned['owns_digital'],
                 'user_owns_physical' => $owned['owns_physical'],
                 'is_eligible_for_upgrade_discount' => $credit > 0,

@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'sku', 'name', 'slug', 'product_type', 'price_cents', 'sale_price_cents',
+    'sku', 'name', 'slug', 'product_type', 'requires_shipping', 'linked_deck_id', 'price_cents', 'sale_price_cents',
     'stock_quantity', 'is_active', 'description', 'metadata',
     'meta_title', 'meta_description', 'canonical_url', 'og_image',
     'product_category_id', 'is_featured', 'is_new_arrival', 'is_boxed_game', 'sort_order',
@@ -53,6 +53,7 @@ class Product extends Model
             'stock_quantity' => 'integer',
             'is_active' => 'boolean',
             'metadata' => 'array',
+            'requires_shipping' => 'boolean',
             'is_featured' => 'boolean',
             'is_new_arrival' => 'boolean',
             'is_boxed_game' => 'boolean',
@@ -104,7 +105,32 @@ class Product extends Model
 
     public function requiresShipping(): bool
     {
-        return (bool) ($this->metadata['requires_shipping'] ?? $this->product_type->shipsByDefault());
+        return $this->product_type !== ProductType::DigitalDeck && (bool) ($this->requires_shipping ?? $this->product_type->shipsByDefault());
+    }
+
+    /** Physical boxed game (and a deck's own digital edition): the one deck it belongs to. */
+    public function linkedDeck(): BelongsTo
+    {
+        return $this->belongsTo(Deck::class, 'linked_deck_id');
+    }
+
+    /** What the store sells: active, and never a deck's digital edition (sold on the deck page). */
+    #[Scope]
+    protected function storefront(Builder $query): void
+    {
+        $query->where('is_active', true)->where('product_type', '!=', ProductType::DigitalDeck->value);
+    }
+
+    protected static function booted(): void
+    {
+        // A physical boxed game unlocks exactly its linked deck; plain store items unlock none.
+        static::saved(function (Product $product) {
+            if ($product->product_type === ProductType::PodPhysicalDeck && $product->linked_deck_id) {
+                $product->decks()->sync([$product->linked_deck_id]);
+            } elseif ($product->product_type === ProductType::PhysicalAccessory && $product->wasChanged('product_type')) {
+                $product->decks()->detach();
+            }
+        });
     }
 
     /** @return list<string> */

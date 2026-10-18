@@ -12,6 +12,12 @@ enum ProductType: string implements HasColor, HasLabel
     case PhysicalAccessory = 'physical_accessory';
     case Bundle = 'bundle';
 
+    /** Types created in the Store admin (digital editions are managed on the deck). @return list<self> */
+    public static function storeTypes(): array
+    {
+        return [self::PodPhysicalDeck, self::PhysicalAccessory, self::Bundle];
+    }
+
     /** @return list<string> */
     public static function values(): array
     {
@@ -28,8 +34,8 @@ enum ProductType: string implements HasColor, HasLabel
     {
         return match ($this) {
             self::DigitalDeck => 'Digital Deck',
-            self::PodPhysicalDeck => 'POD Physical Deck',
-            self::PhysicalAccessory => 'Physical Accessory',
+            self::PodPhysicalDeck => 'Physical Boxed Game Set',
+            self::PhysicalAccessory => 'Store Item',
             self::Bundle => 'Bundle',
         };
     }

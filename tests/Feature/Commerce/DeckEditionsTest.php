@@ -67,15 +67,22 @@ class DeckEditionsTest extends TestCase
 
     public function test_guests_see_both_editions_at_full_price(): void
     {
+        $editions = $this->editions();
+        $this->assertSame(['dig-deck-010', $this->digital->id, 1299], [$editions['digital']['product_slug'], $editions['digital']['product_id'], $editions['digital']['price_cents']]);
+        $this->assertSame(['box-deck-010', $this->box->id, 4999, true, true], [
+            $editions['physical']['product_slug'], $editions['physical']['product_id'], $editions['physical']['price_cents'],
+            $editions['physical']['requires_shipping'], $editions['physical']['in_stock'],
+        ]);
+        $this->assertSame($this->box->id, $editions['physical']['product']['id'], 'Full product for the cart button.');
+
+        unset($editions['digital'], $editions['physical']);
         $this->assertSame([
-            'digital' => ['product_slug' => 'dig-deck-010', 'product_id' => $this->digital->id, 'price_cents' => 1299],
-            'physical' => ['product_slug' => 'box-deck-010', 'product_id' => $this->box->id, 'price_cents' => 4999],
             'user_owns_digital' => false,
             'user_owns_physical' => false,
             'is_eligible_for_upgrade_discount' => false,
             'upgrade_discount_cents' => 0,
             'final_physical_price_cents' => 4999,
-        ], $this->editions());
+        ], $editions);
     }
 
     public function test_buying_the_box_unlocks_the_digital_deck_immediately(): void

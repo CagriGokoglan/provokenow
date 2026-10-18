@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Enums\DeckSegment;
+use App\Enums\ProductType;
 use App\Models\Concerns\FlushesFrontendCache;
 use App\Models\Concerns\OptimizesImages;
+use App\Services\Catalog\DigitalEdition;
 use App\Services\Media\ImageOptimizer;
 use App\Support\MediaUrl;
 use App\Support\SvgSanitizer;
@@ -16,9 +18,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords',
+    'digital_price_cents', 'digital_sku', 'is_digital_sale_active',
     'is_active',
     'meta_title', 'meta_description', 'canonical_url', 'og_image', 'seo_faq',
     'card_front_bg_url', 'card_back_bg_url',
@@ -44,6 +48,8 @@ class Deck extends Model
             'intensity_level' => 'integer',
             'is_active' => 'boolean',
             'seo_faq' => 'array',
+            'digital_price_cents' => 'integer',
+            'is_digital_sale_active' => 'boolean',
         ];
     }
 
@@ -83,6 +89,25 @@ class Deck extends Model
                 }
             }
         });
+
+        // The digital edition (price, SKU, on sale) is edited here and kept in its product.
+        static::saved(function (Deck $deck) {
+            if ($deck->wasRecentlyCreated || $deck->wasChanged(['digital_price_cents', 'digital_sku', 'is_digital_sale_active', 'title', 'is_active'])) {
+                app(DigitalEdition::class)->sync($deck);
+            }
+        });
+    }
+
+    /** The physical boxed game linked to this deck, if any. */
+    public function physicalProduct(): HasOne
+    {
+        return $this->hasOne(Product::class, 'linked_deck_id')->where('product_type', ProductType::PodPhysicalDeck->value);
+    }
+
+    /** The product that sells this deck digitally (managed from the deck, hidden from the store). */
+    public function digitalProduct(): HasOne
+    {
+        return $this->hasOne(Product::class, 'linked_deck_id')->where('product_type', ProductType::DigitalDeck->value);
     }
 
     public function ogImageUrl(): ?string

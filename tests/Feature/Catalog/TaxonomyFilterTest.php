@@ -81,7 +81,7 @@ class TaxonomyFilterTest extends TestCase
         $names = fn (string $query) => collect($this->getJson("/api/v1/products?{$query}")->assertOk()->json('data.items'))->pluck('name')->sort()->values()->all();
 
         $this->assertSame(['Stiletto'], $names('category=heels'));
-        $this->assertSame(['Box', 'Digital'], $names('kind=games'));
+        $this->assertSame(['Box'], $names('kind=games'), 'Digital editions are sold on the deck page, not in the store.');
         $this->assertSame(['Stiletto'], $names('kind=lifestyle'));
         $this->assertSame(['Box'], $names('boxed=1'));
         $this->assertSame(['Stiletto'], $names('featured=1'));

@@ -79,7 +79,8 @@ class SitemapGenerator
             ];
         }
 
-        foreach (Product::active()->orderBy('slug')->cursor() as $product) {
+        // Digital editions are reached through their deck page.
+        foreach (Product::storefront()->orderBy('slug')->cursor() as $product) {
             yield [
                 'loc' => $product->canonical_url ?: FrontendUrl::product($product),
                 'lastmod' => $product->updated_at?->toAtomString(),

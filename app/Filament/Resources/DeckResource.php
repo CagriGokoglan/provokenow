@@ -7,7 +7,10 @@ use App\Filament\Resources\DeckResource\Pages;
 use App\Filament\Resources\DeckResource\RelationManagers\CardsRelationManager;
 use App\Filament\Support\Fields;
 use App\Models\Deck;
+use App\Models\Product;
+use Closure;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -17,10 +20,12 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\HtmlString;
 
 class DeckResource extends Resource
 {
@@ -68,6 +73,48 @@ class DeckResource extends Resource
                     Toggle::make('is_active')
                         ->label('Active (visible in the catalogue)')
                         ->default(false),
+                ]),
+                Tab::make('Editions & Pricing')->icon('heroicon-o-banknotes')->columns(3)->schema([
+                    Section::make('Digital edition')
+                        ->description('Sold on the deck page and unlocked instantly in the buyer\'s library. Changes apply as soon as you save.')
+                        ->columns(3)
+                        ->schema([
+                            Toggle::make('is_digital_sale_active')
+                                ->label('Sell the digital deck')
+                                ->live()
+                                ->inline(false),
+                            Fields::money('digital_price_cents')
+                                ->label('Digital price')
+                                ->required(fn (Get $get) => (bool) $get('is_digital_sale_active')),
+                            TextInput::make('digital_sku')
+                                ->label('Digital SKU')
+                                ->maxLength(64)
+                                ->placeholder(fn (Get $get) => 'DIG-'.strtoupper((string) ($get('deck_code') ?: 'DECK-001')))
+                                ->unique(ignoreRecord: true)
+                                ->rule(fn (?Deck $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record) {
+                                    $clash = Product::where('sku', $value)
+                                        ->when($record?->digitalProduct, fn ($q, $own) => $q->whereKeyNot($own->getKey()))
+                                        ->exists();
+                                    if (filled($value) && $clash) {
+                                        $fail('A store product already uses this SKU.');
+                                    }
+                                }),
+                        ]),
+                    Section::make('Physical edition')
+                        ->columns(1)
+                        ->schema([
+                            Placeholder::make('physical_edition')
+                                ->hiddenLabel()
+                                ->content(function (?Deck $record) {
+                                    $box = $record?->physicalProduct;
+                                    if (! $box) {
+                                        return 'No physical box yet. Create one under Commerce → Products with type "Physical Boxed Game Set" and link this deck; buyers then get this deck digitally for free.';
+                                    }
+                                    $price = number_format($box->effectivePriceCents() / 100, 2).' '.config('provoke.commerce.currency');
+
+                                    return new HtmlString(e("{$box->name} · {$price} · ".($box->is_active ? 'on sale' : 'inactive')).' — <a class="text-primary-600 underline" href="'.e(ProductResource::getUrl('edit', ['record' => $box])).'">edit the box</a>');
+                                }),
+                        ]),
                 ]),
                 Tab::make('Card Artwork')->icon('heroicon-o-paint-brush')->columns(2)->schema([
                     FileUpload::make('card_front_bg_url')

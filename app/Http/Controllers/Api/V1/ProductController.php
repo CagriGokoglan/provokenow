@@ -25,7 +25,7 @@ class ProductController extends Controller
             'product_type' => ['sometimes', Rule::enum(ProductType::class)],
             'deck_code' => ['sometimes', 'string', 'max:20'],
             'category' => ['sometimes', 'string', 'max:80'],
-            // Store tab "Games": every playable deck product (digital, printed box, bundle).
+            // Store tab "Games": every playable deck product (printed box, bundle).
             'kind' => ['sometimes', Rule::in(['games', 'lifestyle'])],
             'boxed' => ['sometimes', 'boolean'],
             'featured' => ['sometimes', 'boolean'],
@@ -36,7 +36,8 @@ class ProductController extends Controller
 
         $games = [ProductType::DigitalDeck->value, ProductType::PodPhysicalDeck->value, ProductType::Bundle->value];
 
-        $products = Product::active()
+        // The store never lists a deck's digital edition; that is sold on the deck page.
+        $products = Product::storefront()
             ->with(['decks:id,deck_code', 'category:id,name,slug'])
             ->when($filters['product_type'] ?? null, fn ($q, $type) => $q->where('product_type', $type))
             ->when($filters['deck_code'] ?? null, fn ($q, $code) => $q->whereHas('decks', fn ($d) => $d->where('deck_code', strtoupper($code))))

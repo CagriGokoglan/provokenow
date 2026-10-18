@@ -37,7 +37,7 @@ class CheckoutFulfillmentTest extends TestCase
     {
         [$d1, $d2, $d3] = Deck::factory()->count(3)->withCards(2)->create();
         $single = Product::factory()->digitalDeck($d1, 2000)->create();
-        $bundle = Product::factory()->state(['product_type' => ProductType::Bundle, 'price_cents' => 3500, 'metadata' => ['requires_shipping' => false]])
+        $bundle = Product::factory()->state(['product_type' => ProductType::Bundle, 'price_cents' => 3500, 'requires_shipping' => false])
             ->hasAttached([$d2, $d3], [], 'decks')->create();
 
         Sanctum::actingAs($this->customer);

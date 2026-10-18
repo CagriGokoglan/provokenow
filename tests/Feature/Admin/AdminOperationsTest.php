@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Enums\EntitlementStatus;
 use App\Enums\FulfillmentStatus;
 use App\Enums\PaymentStatus;
+use App\Enums\ProductType;
 use App\Enums\UserRole;
 use App\Filament\Resources\DeckResource\Pages\CreateDeck;
 use App\Filament\Resources\DeckResource\Pages\EditDeck;
@@ -116,7 +117,9 @@ class AdminOperationsTest extends TestCase
     public function test_product_form_stores_cents_and_claims_and_preserves_metadata(): void
     {
         $deck = Deck::factory()->create();
+        // Only bundles pick their decks freely (a boxed game links one deck, store items none).
         $product = Product::factory()->accessory(['segments' => ['Medium_Spice']])->create([
+            'product_type' => ProductType::Bundle,
             'metadata' => ['images' => [], 'upsell' => ['segments' => ['Medium_Spice']], 'supplier_ref' => 'SUP-9'],
         ]);
 

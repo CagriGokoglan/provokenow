@@ -26,7 +26,7 @@ class HomeController extends Controller
 
     public function __invoke(): JsonResponse
     {
-        $products = fn () => Product::active()->with(['decks:id,deck_code', 'category:id,name,slug']);
+        $products = fn () => Product::storefront()->with(['decks:id,deck_code', 'category:id,name,slug']);
 
         $slides = HeroSlide::live()
             ->with(['deck:id,deck_code,is_active', 'product:id,slug,is_active'])

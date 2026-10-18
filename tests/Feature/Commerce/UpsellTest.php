@@ -111,15 +111,16 @@ class UpsellTest extends TestCase
             ->assertJsonPath('data.recommendations.0.bundle_discount_eligible', true);
     }
 
-    public function test_product_index_lists_active_products_with_deck_claims(): void
+    public function test_product_index_lists_store_products_with_deck_claims_but_never_digital_editions(): void
     {
-        $this->getJson('/api/v1/products?product_type=digital_deck')
-            ->assertOk()
-            ->assertJsonPath('data.pagination.total', 1)
-            ->assertJsonPath('data.items.0.deck_claim_ids.0', $this->digital->decks()->first()->id)
-            ->assertJsonPath('data.items.0.effective_price_cents', 2000);
+        $this->getJson('/api/v1/products?product_type=digital_deck')->assertOk()->assertJsonPath('data.pagination.total', 0);
 
-        // 7 created, 1 inactive.
-        $this->getJson('/api/v1/products')->assertJsonPath('data.pagination.total', 7);
+        $this->getJson('/api/v1/products?deck_code=DECK-020&product_type=pod_physical_deck')
+            ->assertJsonPath('data.pagination.total', 1)
+            ->assertJsonPath('data.items.0.deck_claim_ids.0', $this->pod->decks()->first()->id)
+            ->assertJsonPath('data.items.0.effective_price_cents', 4000);
+
+        // 7 created: 1 inactive, 1 digital edition.
+        $this->getJson('/api/v1/products')->assertJsonPath('data.pagination.total', 6);
     }
 }

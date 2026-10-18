@@ -33,14 +33,14 @@ class ProductFactory extends Factory
 
     public function digitalDeck(Deck $deck, int $priceCents = 2000): static
     {
-        return $this->state(['product_type' => ProductType::DigitalDeck, 'price_cents' => $priceCents])
+        return $this->state(['product_type' => ProductType::DigitalDeck, 'requires_shipping' => false, 'linked_deck_id' => $deck->getKey(), 'price_cents' => $priceCents])
             ->hasAttached($deck, [], 'decks');
     }
 
     public function podDeck(Deck $deck, int $priceCents = 4000): static
     {
-        return $this->state(['product_type' => ProductType::PodPhysicalDeck, 'price_cents' => $priceCents])
-            ->hasAttached($deck, [], 'decks');
+        // Saving a physical boxed game links its deck (Product::booted).
+        return $this->state(['product_type' => ProductType::PodPhysicalDeck, 'linked_deck_id' => $deck->getKey(), 'price_cents' => $priceCents]);
     }
 
     /** @param array<string, mixed> $upsell metadata.upsell targeting rules */

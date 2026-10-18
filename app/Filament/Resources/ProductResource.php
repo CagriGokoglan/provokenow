@@ -26,6 +26,7 @@ use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class ProductResource extends Resource
@@ -66,7 +67,24 @@ class ProductResource extends Resource
                         })
                         ->prefix('/store/'),
                     TextInput::make('sku')->label('SKU')->required()->maxLength(64)->unique(ignoreRecord: true),
-                    Select::make('product_type')->options(ProductType::class)->required()->native(false)->live(),
+                    Select::make('product_type')
+                        ->options(collect(ProductType::storeTypes())->mapWithKeys(fn (ProductType $t) => [$t->value => $t->getLabel()]))
+                        ->required()
+                        ->native(false)
+                        ->live()
+                        ->helperText('Digital decks are priced and sold from the deck itself (Catalog → Decks).'),
+                    Select::make('linked_deck_id')
+                        ->label('Linked deck')
+                        ->relationship('linkedDeck', 'deck_code', fn ($query, ?Product $record) => $query
+                            // Only decks without a physical box yet (plus this product's own deck).
+                            ->whereDoesntHave('physicalProduct', fn ($q) => $q->when($record, fn ($q) => $q->whereKeyNot($record->getKey())))
+                            ->orderBy('deck_code'))
+                        ->getOptionLabelFromRecordUsing(fn (Deck $deck) => "{$deck->deck_code} — {$deck->title}")
+                        ->searchable(['deck_code', 'title'])
+                        ->preload()
+                        ->visible(fn (Get $get) => static::typeOf($get) === ProductType::PodPhysicalDeck)
+                        ->required(fn (Get $get) => static::typeOf($get) === ProductType::PodPhysicalDeck)
+                        ->helperText('Buyers get this deck digitally the moment they pay, and the deck page offers this box. One box per deck.'),
                     Textarea::make('description')->rows(5)->columnSpanFull(),
                     Select::make('product_category_id')
                         ->label('Store category')
@@ -76,11 +94,10 @@ class ProductResource extends Resource
                         ->placeholder('— none (games live under the Games tab) —')
                         ->helperText('Dice, Lingerie & Underwear, Heels… Manage under Catalog → Store Categories.'),
                     Toggle::make('is_active')->label('Active (purchasable)')->default(true),
-                    Toggle::make('metadata.requires_shipping')
+                    Toggle::make('requires_shipping')
                         ->label('Requires shipping')
-                        ->helperText('Bundles only: whether this bundle contains physical items.')
-                        ->default(true)
-                        ->visible(fn (Get $get) => $get('product_type') === ProductType::Bundle->value || $get('product_type') === ProductType::Bundle),
+                        ->helperText('Off only for bundles without any physical item.')
+                        ->default(true),
                 ]),
 
                 Tab::make('Merchandising')->icon('heroicon-o-star')->columns(2)->schema([
@@ -129,7 +146,7 @@ class ProductResource extends Resource
                         ->helperText('The first image is the primary product image.'),
                 ]),
 
-                Tab::make('Deck Access')->icon('heroicon-o-key')->schema([
+                Tab::make('Deck Access')->icon('heroicon-o-key')->visible(fn (Get $get) => static::typeOf($get) === ProductType::Bundle)->schema([
                     Select::make('decks')
                         ->label('Decks unlocked on purchase')
                         ->relationship('decks', 'deck_code')
@@ -137,7 +154,7 @@ class ProductResource extends Resource
                         ->multiple()
                         ->searchable(['deck_code', 'title'])
                         ->preload()
-                        ->helperText('Customers get digital access to these decks as soon as payment is confirmed. Bundles can claim several.'),
+                        ->helperText('Customers get digital access to these decks as soon as payment is confirmed.'),
                 ]),
 
                 Tab::make('Upsells')->icon('heroicon-o-arrow-trending-up')->schema([
@@ -227,7 +244,7 @@ class ProductResource extends Resource
                 Tables\Columns\ToggleColumn::make('is_active')->label('Active'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('product_type')->options(ProductType::class),
+                Tables\Filters\SelectFilter::make('product_type')->options(collect(ProductType::storeTypes())->mapWithKeys(fn (ProductType $t) => [$t->value => $t->getLabel()])),
                 Tables\Filters\SelectFilter::make('product_category_id')->label('Category')->relationship('category', 'name')->preload(),
                 Tables\Filters\TernaryFilter::make('is_featured')->label('Popular'),
                 Tables\Filters\TernaryFilter::make('is_new_arrival')->label('New arrival'),
@@ -237,6 +254,19 @@ class ProductResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
             ]);
+    }
+
+    /** Physical store inventory only: a deck's digital edition is managed on the deck. */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->where('product_type', '!=', ProductType::DigitalDeck->value);
+    }
+
+    private static function typeOf(Get $get): ?ProductType
+    {
+        $type = $get('product_type');
+
+        return $type instanceof ProductType ? $type : ProductType::tryFrom((string) $type);
     }
 
     public static function getPages(): array
