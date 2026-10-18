@@ -113,12 +113,18 @@ class SeoSchemaTest extends TestCase
         $schema = $data['schema_json_ld'];
         $faq = $this->node($schema, 'FAQPage');
         $questions = array_column($faq['mainEntity'], 'name');
-        $this->assertSame('Is After Midnight good for long-distance couples?', $questions[0]);
+        // Its own questions only, exactly as entered.
+        $this->assertSame(['Is After Midnight good for long-distance couples?'], $questions);
+        $this->assertSame('Question', $faq['mainEntity'][0]['@type']);
+        $this->assertSame('Answer', $faq['mainEntity'][0]['acceptedAnswer']['@type']);
+
+        // Without its own questions, the deck gets generated ones (still never paid cards).
+        $deck->update(['faqs' => null]);
+        $schema = $this->getJson('/api/v1/decks/DECK-021')->json('data.schema_json_ld');
+        $questions = array_column($this->node($schema, 'FAQPage')['mainEntity'], 'name');
         $this->assertContains('What is After Midnight?', $questions);
         $this->assertContains('Is After Midnight available as a physical deck?', $questions);
         $this->assertContains('What does a card from After Midnight look like?', $questions);
-        $this->assertSame('Question', $faq['mainEntity'][0]['@type']);
-        $this->assertSame('Answer', $faq['mainEntity'][0]['acceptedAnswer']['@type']);
 
         $encoded = json_encode($schema);
         $this->assertStringContainsString('Write a three-word invitation.', $encoded);

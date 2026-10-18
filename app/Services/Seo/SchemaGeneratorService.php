@@ -195,6 +195,13 @@ class SchemaGeneratorService
         $brand = config('provoke.brand.name');
         $keywords = implode(', ', $deck->themeKeywords());
 
+        // The deck's own questions, exactly as entered in the admin. Only a deck without any gets
+        // the site-wide defaults plus a few questions generated from its data.
+        $own = app(Faqs::class)->clean($deck->faqs);
+        if ($own !== []) {
+            return $own;
+        }
+
         $faqs = app(Faqs::class)->forDeck($deck);
 
         $faqs[] = [

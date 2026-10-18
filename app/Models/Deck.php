@@ -91,8 +91,10 @@ class Deck extends Model
         });
 
         // The digital edition (price, SKU, on sale) is edited here and kept in its product.
-        static::saved(function (Deck $deck) {
-            if ($deck->wasRecentlyCreated || $deck->wasChanged(['digital_price_cents', 'digital_sku', 'is_digital_sale_active', 'title', 'is_active'])) {
+        // (wasRecentlyCreated stays true on the instance, so creation and later edits are separate hooks.)
+        static::created(fn (Deck $deck) => app(DigitalEdition::class)->sync($deck));
+        static::updated(function (Deck $deck) {
+            if ($deck->wasChanged(['digital_price_cents', 'digital_sku', 'is_digital_sale_active', 'title', 'is_active'])) {
                 app(DigitalEdition::class)->sync($deck);
             }
         });

@@ -50,6 +50,17 @@ class BlogAndFaqTest extends TestCase
         $this->assertContains('What is '.Deck::first()->title.'?', array_column($faqs, 'question'));
     }
 
+    public function test_a_deck_with_its_own_faqs_shows_exactly_those(): void
+    {
+        $this->seed(DefaultFaqSeeder::class);
+        Deck::factory()->create(['deck_code' => 'DECK-002', 'faqs' => [['question' => 'Mine?', 'answer' => 'Only mine.']]]);
+
+        $data = $this->getJson('/api/v1/decks/deck-002')->json('data');
+        $this->assertSame([['question' => 'Mine?', 'answer' => 'Only mine.']], $data['faqs']);
+        $faqNode = collect($data['schema_json_ld']['@graph'])->firstWhere('@type', 'FAQPage');
+        $this->assertSame(['Mine?'], array_column($faqNode['mainEntity'], 'name'), 'Schema matches the page.');
+    }
+
     public function test_the_pillar_post_renders_with_jump_links_ctas_author_and_schema(): void
     {
         Deck::factory()->create(['deck_code' => 'DECK-001', 'digital_price_cents' => 1299]);
