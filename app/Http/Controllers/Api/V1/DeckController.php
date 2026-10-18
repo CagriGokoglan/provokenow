@@ -44,7 +44,7 @@ class DeckController extends Controller
         // Metadata columns only: no cards, no AI prompt.
         $decks = Deck::active()
             ->select(['id', 'deck_code', 'slug', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'card_front_bg_url', 'card_back_bg_url'])
-            ->with(['categories' => fn ($q) => $q->active()->select('deck_categories.id', 'name', 'slug'), 'previewCandidates'])
+            ->with(['categories' => fn ($q) => $q->active()->select('deck_categories.id', 'name', 'slug')])
             ->when($filters['segment'] ?? null, fn ($q, $segment) => $q->where('segment', $segment))
             ->when($filters['level'] ?? null, fn ($q, $level) => $q->where('segment', DeckSegment::fromSlug($level)->value))
             ->when($categories, fn ($q, $slugs) => $q->whereHas('categories', fn ($c) => $c->whereIn('slug', $slugs)->where('is_active', true)))
@@ -83,7 +83,7 @@ class DeckController extends Controller
         DeckEditions $editions,
     ): JsonResponse {
         // {deckCode} is the deck's slug (or, for old links, an earlier slug or its code).
-        $deck = Deck::findForUrl($deckCode)?->load(['categories' => fn ($q) => $q->active(), 'previewCandidates']) ?? abort(404);
+        $deck = Deck::findForUrl($deckCode)?->load(['categories' => fn ($q) => $q->active()]) ?? abort(404);
         $user = $request->user('sanctum');
 
         $entitled = $user && ($user->isStaff() || $user->hasAccessToDeck($deck));
@@ -94,10 +94,10 @@ class DeckController extends Controller
         };
         $isLocked = $lockReason !== null;
 
-        // Locked: the public preview only (the admin's picks, else the first cards). The full
-        // deck is never serialised.
-        $preview = $deck->previewCards();
-        $cards = $isLocked ? $preview : $deck->cards()->get();
+        // Locked: the public preview (the first N cards) only. The full deck is never serialised.
+        $cards = $deck->cards()
+            ->when($isLocked, fn ($q) => $q->where('card_number', '<=', (int) config('provoke.deck_preview_cards')))
+            ->get();
 
         $totalCards = $deck->cards()->count();
         $products = $deck->products()->active()->with('decks:id,deck_code,slug,title')->get();
@@ -134,13 +134,11 @@ class DeckController extends Controller
                 'final_physical_price_cents' => $physical ? $physical->effectivePriceCents() - $credit : null,
             ],
             'cards' => CardResource::collection($cards),
-            // Sample questions / teaser cards, the same for every viewer.
-            'preview_cards' => CardResource::collection($preview),
             // Shown on the page (same list as the FAQPage schema).
-            'faqs' => $schema->deckFaqs($deck, $preview->first(), $totalCards, $products),
+            'faqs' => $schema->deckFaqs($deck, $cards->firstWhere('card_number', 1), $totalCards, $products),
             'seo' => $seo->forDeck($deck),
             // Built from the public preview card only, regardless of the viewer's access.
-            'schema_json_ld' => $schema->forDeck($deck, $preview->first(), $totalCards, $products),
+            'schema_json_ld' => $schema->forDeck($deck, $cards->firstWhere('card_number', 1), $totalCards, $products),
         ], $isLocked ? 'Deck preview.' : 'Deck unlocked.');
     }
 }

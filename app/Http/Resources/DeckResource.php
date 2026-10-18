@@ -28,10 +28,6 @@ class DeckResource extends JsonResource
             'core_theme' => $this->core_theme_keywords,
             'core_theme_keywords' => $this->themeKeywords(),
             'vault_protected' => $this->isVaultProtected(),
-            // Public preview / sample cards: the admin's picks, else the first cards.
-            'preview_cards' => $this->whenLoaded('previewCandidates', fn () => CardResource::collection($this->resource->previewCards())),
-            // Dealt on the homepage only when an admin has picked its preview cards.
-            'is_homepage_eligible' => $this->whenLoaded('previewCandidates', fn () => $this->resource->hasPickedPreview()),
             // Deck page sections (written in the admin; null = the web app's generated text).
             'page_content' => $this->when($request->routeIs('v1.decks.show'), fn () => [
                 'whats_inside' => $this->whats_inside,

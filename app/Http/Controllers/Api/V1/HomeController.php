@@ -27,6 +27,9 @@ class HomeController extends Controller
 
     public const SHOWCASE_LIMIT = 6;
 
+    /** "Draw a card": random cards from Light and Medium Spice decks, never their first six. */
+    public const SHOWCASE_SKIP_CARDS = 6;
+
     /** Cached with the page, so send a pool; the web app draws six from it per visit. */
     public const SHOWCASE_CARD_POOL = 36;
 
@@ -92,10 +95,8 @@ class HomeController extends Controller
 
     private function showcaseCards(): array
     {
-        // "Draw a card": the hand-picked preview cards of Light and Medium Spice decks. A deck
-        // without picked preview cards is never dealt here.
         return Card::query()
-            ->where('is_preview', true)
+            ->where('card_number', '>', self::SHOWCASE_SKIP_CARDS)
             ->whereHas('deck', fn ($q) => $q->active()->whereIn('segment', [DeckSegment::LightIgnition, DeckSegment::MediumSpice]))
             ->with(['deck' => fn ($q) => $q->select(['id', 'deck_code', 'slug', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'card_front_bg_url', 'card_back_bg_url'])->withCount('cards')])
             ->inRandomOrder()

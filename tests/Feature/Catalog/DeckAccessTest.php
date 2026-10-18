@@ -114,9 +114,7 @@ class DeckAccessTest extends TestCase
             ->assertJsonPath('data.items.1.vault_protected', true)
             ->assertJsonStructure(['data' => ['items' => [['id', 'deck_code', 'title', 'segment', 'intensity_level', 'core_theme']]]]);
 
-        // Only the two public preview cards travel with the listing, never the rest of a deck.
-        $this->assertCount(2, $response->json('data.items.0.preview_cards'));
-        $this->assertStringNotContainsString('"Card 3"', $response->getContent());
+        $this->assertStringNotContainsString('content', $response->getContent());
         $this->getJson('/api/v1/decks?segment=Taboo')->assertJsonPath('data.pagination.total', 1);
         $this->getJson('/api/v1/decks/DECK-002')->assertNotFound()->assertJsonPath('success', false);
         $this->getJson('/api/v1/products/missing')->assertNotFound()->assertJsonPath('message', 'Resource not found.');
