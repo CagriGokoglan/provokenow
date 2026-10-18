@@ -40,13 +40,22 @@ class SchemaGeneratorService
             'logo' => $brand['logo_url'],
             'description' => $brand['description'],
             'sameAs' => $brand['same_as'] ?: null,
+            'contactPoint' => [
+                '@type' => 'ContactPoint',
+                'contactType' => 'customer support',
+                'email' => config('provoke.company.support_email'),
+                'url' => FrontendUrl::to('/legal/contact'),
+                'availableLanguage' => ['English'],
+            ],
         ]);
     }
 
-    public function product(Product $product): array
+    /** @param  ?string  $fallbackImage  e.g. the deck's share image, for editions without photos */
+    public function product(Product $product, ?string $fallbackImage = null): array
     {
         $url = $product->canonical_url ?: FrontendUrl::product($product);
-        $images = $product->images() ?: array_filter([$product->ogImageUrl()]);
+        // Google requires an image for product results: photos, else a share image, else the site's.
+        $images = $product->images() ?: [$product->ogImageUrl() ?: $fallbackImage ?: config('provoke.seo.default_og_image')];
 
         return array_filter([
             '@type' => 'Product',
@@ -66,12 +75,8 @@ class SchemaGeneratorService
                 'availability' => $product->isPurchasable() ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
                 'itemCondition' => 'https://schema.org/NewCondition',
                 'seller' => ['@id' => $this->organizationId()],
-                // Shipping is complimentary on every order.
-                'shippingDetails' => $product->requiresShipping() ? [
-                    '@type' => 'OfferShippingDetails',
-                    'shippingRate' => ['@type' => 'MonetaryAmount', 'value' => '0', 'currency' => config('provoke.commerce.currency')],
-                    'shippingLabel' => config('provoke.commerce.shipping_label'),
-                ] : null,
+                'shippingDetails' => $product->requiresShipping() ? $this->shippingDetails() : null,
+                'hasMerchantReturnPolicy' => $this->returnPolicy($product->requiresShipping()),
             ]),
         ], fn ($v) => $v !== null);
     }
@@ -119,10 +124,11 @@ class SchemaGeneratorService
             $this->breadcrumbs([
                 ['Home', FrontendUrl::to('/')],
                 ['Decks', FrontendUrl::to('/decks')],
+                [$deck->segment->label(), FrontendUrl::deckLevel($deck->segment)],
                 [$deck->title, $url],
             ]),
             $this->faqPage($this->deckFaqs($deck, $previewCard, $cardCount, $products), $url),
-            ...$products->map(fn (Product $p) => $this->product($p))->all(),
+            ...$products->map(fn (Product $p) => $this->product($p, $deck->ogImageUrl()))->all(),
         ]);
     }
 
@@ -130,13 +136,16 @@ class SchemaGeneratorService
     {
         $url = $product->canonical_url ?: FrontendUrl::product($product);
 
+        $category = $product->relationLoaded('category') && $product->category?->is_active ? $product->category : null;
+
         return $this->graph([
             $this->product($product),
-            $this->breadcrumbs([
+            $this->breadcrumbs(array_values(array_filter([
                 ['Home', FrontendUrl::to('/')],
                 ['Store', FrontendUrl::to('/store')],
+                $category ? [$category->name, FrontendUrl::storeCategory($category)] : null,
                 [$product->name, $url],
-            ]),
+            ]))),
             $this->faqPage(app(Faqs::class)->forProduct($product), $url),
         ]);
     }
@@ -252,6 +261,48 @@ class SchemaGeneratorService
             ProductType::PhysicalAccessory => 'Intimacy Accessory',
             ProductType::Bundle => 'Bundle',
         };
+    }
+
+    /** Complimentary, discreet express shipping to every listed country (printed to order). */
+    private function shippingDetails(): array
+    {
+        $commerce = config('provoke.commerce');
+        $days = fn (array $range) => ['@type' => 'QuantitativeValue', 'minValue' => $range[0], 'maxValue' => $range[1], 'unitCode' => 'DAY'];
+
+        return [
+            '@type' => 'OfferShippingDetails',
+            'shippingLabel' => $commerce['shipping_label'],
+            'shippingRate' => ['@type' => 'MonetaryAmount', 'value' => '0', 'currency' => $commerce['currency']],
+            'shippingDestination' => array_map(fn (string $country) => ['@type' => 'DefinedRegion', 'addressCountry' => $country], $commerce['shipping_countries']),
+            'deliveryTime' => [
+                '@type' => 'ShippingDeliveryTime',
+                'handlingTime' => $days($commerce['handling_days']),
+                'transitTime' => $days($commerce['transit_days']),
+            ],
+        ];
+    }
+
+    /** Physical goods: unopened returns by mail within the window. Digital: final sale. */
+    private function returnPolicy(bool $physical): array
+    {
+        $countries = config('provoke.commerce.shipping_countries');
+
+        return $physical
+            ? [
+                '@type' => 'MerchantReturnPolicy',
+                'applicableCountry' => $countries,
+                'returnPolicyCategory' => 'https://schema.org/MerchantReturnFiniteReturnWindow',
+                'merchantReturnDays' => config('provoke.commerce.return_days'),
+                'returnMethod' => 'https://schema.org/ReturnByMail',
+                'returnFees' => 'https://schema.org/ReturnFeesCustomerResponsibility',
+                'merchantReturnLink' => FrontendUrl::to('/legal/refund-policy'),
+            ]
+            : [
+                '@type' => 'MerchantReturnPolicy',
+                'applicableCountry' => $countries,
+                'returnPolicyCategory' => 'https://schema.org/MerchantReturnNotPermitted',
+                'merchantReturnLink' => FrontendUrl::to('/legal/refund-policy'),
+            ];
     }
 
     private function organizationId(): string

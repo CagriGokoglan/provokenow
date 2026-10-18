@@ -6,6 +6,7 @@ use App\Enums\DeckSegment;
 use App\Models\Card;
 use App\Models\Deck;
 use App\Models\Product;
+use App\Models\ProductCategory;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -52,6 +53,12 @@ class SeoSchemaTest extends TestCase
         $crumbs = $this->node($schema, 'BreadcrumbList')['itemListElement'];
         $this->assertSame(['Home', 'Store', 'Velvet Hours Box Edition'], array_column($crumbs, 'name'));
         $this->assertSame([1, 2, 3], array_column($crumbs, 'position'));
+
+        // In a store category: Home > Store > Category > Product.
+        $product->update(['product_category_id' => ProductCategory::create(['name' => 'Printed Game Boxes', 'slug' => 'printed-game-boxes'])->id]);
+        $crumbs = $this->node($this->getJson('/api/v1/products/velvet-hours-box')->json('data.schema_json_ld'), 'BreadcrumbList')['itemListElement'];
+        $this->assertSame(['Home', 'Store', 'Printed Game Boxes', 'Velvet Hours Box Edition'], array_column($crumbs, 'name'));
+        $this->assertSame('https://provokenow.com/store/printed-game-boxes', $crumbs[2]['item']);
     }
 
     public function test_editorial_seo_fields_override_fallbacks_and_limits_are_enforced(): void
@@ -132,7 +139,21 @@ class SeoSchemaTest extends TestCase
 
         $skus = collect($schema['@graph'])->where('@type', 'Product')->pluck('sku')->sort()->values()->all();
         $this->assertSame(['DIG-021', 'POD-021'], $skus);
-        $this->assertSame(['Home', 'Decks', 'After Midnight'], array_column($this->node($schema, 'BreadcrumbList')['itemListElement'], 'name'));
+        $crumbs = $this->node($schema, 'BreadcrumbList')['itemListElement'];
+        $this->assertSame(['Home', 'Decks', 'Medium Spice', 'After Midnight'], array_column($crumbs, 'name'));
+        $this->assertSame('https://provokenow.com/decks/medium-spice', $crumbs[2]['item']);
+
+        // Digital edition: final sale, no shipping. Box: free shipping with times, 7-day returns.
+        $offers = collect($schema['@graph'])->where('@type', 'Product')->keyBy('sku')->map(fn ($p) => $p['offers']);
+        $this->assertArrayNotHasKey('shippingDetails', $offers['DIG-021']);
+        $this->assertSame('https://schema.org/MerchantReturnNotPermitted', $offers['DIG-021']['hasMerchantReturnPolicy']['returnPolicyCategory']);
+        $shipping = $offers['POD-021']['shippingDetails'];
+        $this->assertSame('0', $shipping['shippingRate']['value']);
+        $this->assertSame(['@type' => 'DefinedRegion', 'addressCountry' => 'US'], $shipping['shippingDestination'][0]);
+        $this->assertSame([3, 5], [$shipping['deliveryTime']['handlingTime']['minValue'], $shipping['deliveryTime']['handlingTime']['maxValue']]);
+        $this->assertSame([5, 10], [$shipping['deliveryTime']['transitTime']['minValue'], $shipping['deliveryTime']['transitTime']['maxValue']]);
+        $this->assertSame(7, $offers['POD-021']['hasMerchantReturnPolicy']['merchantReturnDays']);
+        $this->assertSame('https://schema.org/ReturnByMail', $offers['POD-021']['hasMerchantReturnPolicy']['returnMethod']);
     }
 
     public function test_public_config_exposes_tracking_ids_but_never_secrets(): void
@@ -153,7 +174,9 @@ class SeoSchemaTest extends TestCase
             ->assertJsonPath('data.tracking.google_site_verification', 'gsc-token')
             ->assertJsonPath('data.locale.currency', 'USD')
             ->assertJsonPath('data.locale.default', 'en')
-            ->assertJsonPath('data.organization_schema_json_ld.@graph.0.@type', 'Organization');
+            ->assertJsonPath('data.organization_schema_json_ld.@graph.0.@type', 'Organization')
+            ->assertJsonPath('data.organization_schema_json_ld.@graph.0.contactPoint.email', 'support@provokenow.com')
+            ->assertJsonPath('data.organization_schema_json_ld.@graph.1.@type', 'WebSite');
 
         $this->assertStringNotContainsString('SECRET', $response->getContent());
     }

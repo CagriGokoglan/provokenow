@@ -81,7 +81,7 @@ return [
     ],
 
     'seo' => [
-        'default_og_image' => env('SEO_DEFAULT_OG_IMAGE', 'https://provokenow.com/og/default.jpg'),
+        'default_og_image' => env('SEO_DEFAULT_OG_IMAGE', 'https://provokenow.com/og/default.png'),
         'default_locale' => 'en',
         'supported_locales' => ['en'],
 
@@ -121,6 +121,13 @@ return [
         'shipping_badge_text' => 'Complimentary Worldwide Express Shipping in 100% Unbranded Black Packaging',
 
         'max_line_quantity' => 10,
+
+        // Structured data (Google merchant listings): where physical orders ship, how long they
+        // take, and the return window. Keep in step with the Shipping and Refund policy pages.
+        'shipping_countries' => array_values(array_filter(explode(',', (string) env('SHIPPING_COUNTRIES', 'US,CA,GB,IE,AU,NZ,DE,FR,NL,BE,LU,ES,PT,IT,AT,CH,SE,NO,DK,FI')))),
+        'handling_days' => [3, 5],
+        'transit_days' => [5, 10],
+        'return_days' => 7,
     ],
 
     'upsell' => [
