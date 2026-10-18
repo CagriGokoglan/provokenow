@@ -16,8 +16,8 @@ class SitemapTest extends TestCase
     {
         parent::setUp();
 
-        Deck::factory()->create(['deck_code' => 'DECK-001']);
-        Deck::factory()->inactive()->create(['deck_code' => 'DECK-002']);
+        Deck::factory()->create(['deck_code' => 'DECK-001', 'title' => 'First Light']);
+        Deck::factory()->inactive()->create(['deck_code' => 'DECK-002', 'title' => 'Retired Deck']);
         Product::factory()->accessory()->create(['slug' => 'silk-blindfold', 'og_image' => 'https://cdn.provokenow.com/og/silk.jpg']);
         Product::factory()->inactive()->create(['slug' => 'retired-product']);
         ProductCategory::factory()->create(['slug' => 'heels']);
@@ -56,12 +56,12 @@ class SitemapTest extends TestCase
             'https://provokenow.com/decks/medium-spice',
             'https://provokenow.com/decks/advanced',
             'https://provokenow.com/decks/taboo',
-            'https://provokenow.com/decks/deck-001',
+            'https://provokenow.com/decks/first-light',
             'https://provokenow.com/store/heels',
             'https://provokenow.com/store/silk-blindfold',
         ], $locs);
 
-        foreach (['/vault', '/checkout', '/user', '/cart', 'deck-002', 'retired-product', 'hidden-category', '/api/', '?level=', '?category='] as $forbidden) {
+        foreach (['/vault', '/checkout', '/user', '/cart', 'retired-deck', 'retired-product', 'hidden-category', '/api/', '?level=', '?category='] as $forbidden) {
             $this->assertStringNotContainsString($forbidden, $response->getContent());
         }
 
@@ -80,6 +80,6 @@ class SitemapTest extends TestCase
         unlink($path);
 
         $this->assertNotFalse(simplexml_load_string($xml));
-        $this->assertStringContainsString('https://provokenow.com/decks/deck-001', $xml);
+        $this->assertStringContainsString('https://provokenow.com/decks/first-light', $xml);
     }
 }

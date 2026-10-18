@@ -132,7 +132,7 @@ class UpsellEngine
         $related = Product::active()
             ->whereKeyNot([$product->getKey(), ...$offers->map(fn ($o) => $o['product']->getKey())->all()])
             ->whereHas('decks', fn ($q) => $q->whereIn('decks.id', $product->decks->modelKeys()))
-            ->with('decks:id,deck_code,segment')
+            ->with('decks:id,deck_code,slug,segment')
             ->limit($limit)
             ->get()
             ->filter(fn (Product $p) => $p->isPurchasable())
@@ -151,14 +151,14 @@ class UpsellEngine
         $pods = Product::active()
             ->where('product_type', ProductType::PodPhysicalDeck->value)
             ->whereHas('decks', fn ($q) => $q->whereIn('decks.id', $anchor->decks->modelKeys()))
-            ->with('decks:id,deck_code,segment')
+            ->with('decks:id,deck_code,slug,segment')
             ->orderBy('price_cents')
             ->get();
 
         $accessories = Product::active()
             ->where('product_type', ProductType::PhysicalAccessory->value)
             ->whereNotNull('metadata->upsell')
-            ->with('decks:id,deck_code,segment')
+            ->with('decks:id,deck_code,slug,segment')
             ->orderBy('price_cents')
             ->get();
 

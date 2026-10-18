@@ -19,6 +19,7 @@ class DeckResource extends JsonResource
         return [
             'id' => $this->id,
             'deck_code' => $this->deck_code,
+            'slug' => $this->slug,
             'title' => $this->title,
             'segment' => $this->segment->value,
             'level' => ['slug' => $this->segment->slug(), 'label' => $this->segment->label(), 'rank' => $this->segment->rank()],

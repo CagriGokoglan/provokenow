@@ -27,14 +27,14 @@ return [
     'frontend' => [
         'url' => rtrim((string) env('FRONTEND_URL', 'https://provokenow.com'), '/'),
         'paths' => [
-            'deck' => '/decks/{code}',
+            'deck' => '/decks/{slug}',
             'product' => '/store/{slug}',
             // Clean listing URLs: an intensity level and a store category.
             'deck_level' => '/decks/{level}',
             'store_category' => '/store/{slug}',
             'post' => '/blog/{slug}',
             // Signed-in reading view for an owned deck (linked from order emails).
-            'library_deck' => '/decks/{code}/play',
+            'library_deck' => '/decks/{slug}/play',
             // Account emails link to web pages, which call the API.
             'verify_email' => '/auth/verify-email',
             'reset_password' => '/auth/reset-password',

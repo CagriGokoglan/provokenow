@@ -179,7 +179,7 @@ class OrderMarketingEventsTest extends TestCase
         Mail::assertSentCount(1);
         Mail::assertSent(OrderReceiptMailable::class, function (OrderReceiptMailable $mail) use ($order) {
             $mail->assertHasSubject("Your PROVOKE NOW order {$order->order_number} is confirmed");
-            $mail->assertSeeInHtml('https://provokenow.com/decks/deck-010/play');
+            $mail->assertSeeInHtml('https://provokenow.com/decks/slow-burn/play');
             $mail->assertSeeInHtml('https://provokenow.com/account/library');
 
             return $mail->hasTo('Ava.Doe@Example.com') && $mail->hasFrom('orders@provokenow.com');

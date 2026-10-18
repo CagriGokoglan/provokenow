@@ -19,9 +19,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 #[Fillable([
-    'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'whats_inside', 'how_to_play', 'who_its_for',
+    'deck_code', 'slug', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'whats_inside', 'how_to_play', 'who_its_for',
     'digital_price_cents', 'digital_sale_price_cents', 'digital_sku', 'is_digital_sale_active',
     'is_active',
     'meta_title', 'meta_description', 'canonical_url', 'og_image', 'faqs',
@@ -48,6 +49,7 @@ class Deck extends Model
             'intensity_level' => 'integer',
             'is_active' => 'boolean',
             'faqs' => 'array',
+            'previous_slugs' => 'array',
             'digital_price_cents' => 'integer',
             'digital_sale_price_cents' => 'integer',
             'is_digital_sale_active' => 'boolean',
@@ -84,6 +86,13 @@ class Deck extends Model
     protected static function booted(): void
     {
         static::saving(function (Deck $deck) {
+            // URL from the title on first save; a changed slug keeps the old one as a redirect.
+            if (blank($deck->slug)) {
+                $deck->slug = static::uniqueSlug($deck->title ?: $deck->deck_code, $deck->getKey());
+            } elseif ($deck->isDirty('slug') && filled($old = $deck->getOriginal('slug'))) {
+                $deck->previous_slugs = array_values(array_unique([...(array) $deck->previous_slugs, $old]));
+            }
+
             foreach (['card_front_bg_url', 'card_back_bg_url'] as $field) {
                 if ($deck->isDirty($field)) {
                     SvgSanitizer::sanitizeStored($deck->{$field}, $field);
@@ -99,6 +108,38 @@ class Deck extends Model
                 app(DigitalEdition::class)->sync($deck);
             }
         });
+    }
+
+    /** Slugs the deck can never have: the /decks/{level} pages. */
+    public static function reservedSlugs(): array
+    {
+        return array_map(fn (DeckSegment $s) => $s->slug(), DeckSegment::cases());
+    }
+
+    public static function uniqueSlug(string $title, ?string $ignoreId = null): string
+    {
+        $base = Str::slug($title) ?: 'deck';
+        if (in_array($base, static::reservedSlugs(), true)) {
+            $base .= '-deck';
+        }
+        $slug = $base;
+        for ($i = 2; static::where('slug', $slug)->when($ignoreId, fn ($q) => $q->whereKeyNot($ignoreId))->exists(); $i++) {
+            $slug = "{$base}-{$i}";
+        }
+
+        return $slug;
+    }
+
+    /** Finds an active deck by its slug, an earlier slug or its deck code (old links). */
+    public static function findForUrl(string $param): ?self
+    {
+        $param = Str::lower(trim($param));
+
+        return static::query()->active()
+            ->where(fn ($q) => $q->where('slug', $param)
+                ->orWhere('deck_code', Str::upper($param))
+                ->orWhereJsonContains('previous_slugs', $param))
+            ->first();
     }
 
     /** The physical boxed game linked to this deck, if any. */

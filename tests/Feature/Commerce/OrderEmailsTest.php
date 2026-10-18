@@ -59,7 +59,7 @@ class OrderEmailsTest extends TestCase
 
         $mail = new OrderReceiptMailable($order);
         $mail->assertSeeInHtml('After Midnight');
-        $mail->assertSeeInHtml('https://provokenow.com/decks/deck-010/play');
+        $mail->assertSeeInHtml('https://provokenow.com/decks/after-midnight/play');
         $mail->assertSeeInHtml('Open my library');
         $mail->assertSeeInHtml('https://provokenow.com/account/library');
         $mail->assertDontSeeInHtml('Discreet packaging');

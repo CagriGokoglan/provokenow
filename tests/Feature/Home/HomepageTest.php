@@ -20,7 +20,7 @@ class HomepageTest extends TestCase
 
     public function test_homepage_payload_returns_each_admin_managed_section(): void
     {
-        $deck = Deck::factory()->create(['deck_code' => 'DECK-007']);
+        $deck = Deck::factory()->create(['deck_code' => 'DECK-007', 'title' => 'Velvet Rope']);
         $inactiveDeck = Deck::factory()->inactive()->create(['deck_code' => 'DECK-008']);
         $box = Product::factory()->podDeck($deck)->create(['name' => 'Box', 'slug' => 'box', 'is_boxed_game' => true, 'is_featured' => true]);
         Product::factory()->accessory()->create(['name' => 'Corset', 'is_new_arrival' => true]);
@@ -43,7 +43,7 @@ class HomepageTest extends TestCase
         $data = $this->getJson('/api/v1/home')->assertOk()->json('data');
 
         $this->assertSame(['Product slide', 'Deck slide', 'Custom'], array_column($data['hero_slides'], 'title'));
-        $this->assertSame(['/store/box', '/decks/deck-007', '/store?category=heels'], array_column($data['hero_slides'], 'href'));
+        $this->assertSame(['/store/box', '/decks/velvet-rope', '/store?category=heels'], array_column($data['hero_slides'], 'href'));
         $this->assertSame(['Get the box', 'Explore Deck', 'Discover'], array_column($data['hero_slides'], 'cta_label'));
 
         $this->assertSame(['Box'], array_column($data['popular_products'], 'name'));

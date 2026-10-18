@@ -107,7 +107,7 @@ class SeoSchemaTest extends TestCase
         $data = $this->getJson('/api/v1/decks/DECK-021')->assertOk()->assertJsonPath('data.is_locked', false)->json('data');
 
         $this->assertSame('After Midnight: Card Game for Couples | PROVOKE NOW', $data['seo']['title']);
-        $this->assertSame('https://provokenow.com/decks/deck-021', $data['seo']['canonical_url']);
+        $this->assertSame('https://provokenow.com/decks/after-midnight', $data['seo']['canonical_url']);
         $this->assertStringContainsString('Medium Spice', $data['seo']['description']);
 
         $schema = $data['schema_json_ld'];

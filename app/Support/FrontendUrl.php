@@ -20,7 +20,7 @@ final class FrontendUrl
 
     public static function deck(Deck $deck): string
     {
-        return self::path('deck', ['{code}' => strtolower($deck->deck_code)]);
+        return self::path('deck', ['{slug}' => $deck->slug]);
     }
 
     public static function product(Product $product): string
@@ -31,7 +31,7 @@ final class FrontendUrl
     /** Signed-in reading view for an owned deck (used in emails; never in the sitemap). */
     public static function libraryDeck(Deck $deck): string
     {
-        return self::path('library_deck', ['{code}' => strtolower($deck->deck_code)]);
+        return self::path('library_deck', ['{slug}' => $deck->slug]);
     }
 
     public static function deckLevel(DeckSegment $level): string

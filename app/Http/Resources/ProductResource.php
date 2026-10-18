@@ -34,6 +34,7 @@ class ProductResource extends JsonResource
             'deck_claims' => $this->whenLoaded('decks', fn () => $this->decks->map(fn ($deck) => [
                 'id' => $deck->id,
                 'deck_code' => $deck->deck_code,
+                'slug' => $deck->slug,
             ])->values()),
         ];
     }

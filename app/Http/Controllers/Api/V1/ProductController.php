@@ -24,7 +24,8 @@ class ProductController extends Controller
     {
         $filters = $request->validate([
             'product_type' => ['sometimes', Rule::enum(ProductType::class)],
-            'deck_code' => ['sometimes', 'string', 'max:20'],
+            // A deck's slug (or, for old links, its code).
+            'deck_code' => ['sometimes', 'string', 'max:255'],
             'category' => ['sometimes', 'string', 'max:80'],
             // Store tab "Games": every playable deck product (printed box, bundle).
             'kind' => ['sometimes', Rule::in(['games', 'lifestyle'])],
@@ -39,9 +40,9 @@ class ProductController extends Controller
 
         // The store never lists a deck's digital edition; that is sold on the deck page.
         $products = Product::storefront()
-            ->with(['decks:id,deck_code', 'category:id,name,slug'])
+            ->with(['decks:id,deck_code,slug', 'category:id,name,slug'])
             ->when($filters['product_type'] ?? null, fn ($q, $type) => $q->where('product_type', $type))
-            ->when($filters['deck_code'] ?? null, fn ($q, $code) => $q->whereHas('decks', fn ($d) => $d->where('deck_code', strtoupper($code))))
+            ->when($filters['deck_code'] ?? null, fn ($q, $code) => $q->whereHas('decks', fn ($d) => $d->where('slug', strtolower($code))->orWhere('deck_code', strtoupper($code))))
             ->when($filters['category'] ?? null, fn ($q, $slug) => $q->whereHas('category', fn ($c) => $c->where('slug', $slug)->where('is_active', true)))
             ->when(($filters['kind'] ?? null) === 'games', fn ($q) => $q->whereIn('product_type', $games))
             ->when(($filters['kind'] ?? null) === 'lifestyle', fn ($q) => $q->whereNotIn('product_type', $games))

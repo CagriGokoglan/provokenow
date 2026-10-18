@@ -24,6 +24,7 @@ class DeckJsonImporter
 {
   "deck_code": "DECK-001",
   "title": "First Light",
+  "slug": null,
   "segment": "Light Ignition",
   "intensity_level": 1,
   "core_theme_keywords": ["curiosity", "laughter", "first questions"],
@@ -64,6 +65,7 @@ JSON;
         $data = Validator::make($input, [
             'deck_code' => ['required', 'string', 'max:20', 'regex:/^DECK-\d{3,}$/'],
             'title' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'alpha_dash', 'max:255', Rule::notIn(Deck::reservedSlugs()), Rule::unique('decks', 'slug')->ignore($existing?->getKey())],
             'segment' => ['required', Rule::enum(DeckSegment::class)],
             'intensity_level' => ['required', 'integer', 'between:1,4'],
             'core_theme_keywords' => ['nullable', 'string', 'max:1000'],
@@ -101,6 +103,8 @@ JSON;
             $deck->fill([
                 'deck_code' => $data['deck_code'],
                 'title' => $data['title'],
+                // Empty = from the title (new decks); an existing deck keeps its address unless one is given.
+                'slug' => $data['slug'] ?? $existing?->slug,
                 'segment' => $data['segment'],
                 'intensity_level' => $data['intensity_level'],
                 'core_theme_keywords' => $data['core_theme_keywords'] ?? null,

@@ -54,7 +54,7 @@ class BlogController extends Controller
                 'pillar' => fn ($q) => $q->published(),
                 'clusterPosts' => fn ($q) => $q->published()->orderByDesc('published_at'),
                 'decks' => fn ($q) => $q->active(),
-                'products' => fn ($q) => $q->storefront()->with('decks:id,deck_code', 'category:id,name,slug'),
+                'products' => fn ($q) => $q->storefront()->with('decks:id,deck_code,slug', 'category:id,name,slug'),
             ])
             ->firstOrFail();
 

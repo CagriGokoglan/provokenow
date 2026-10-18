@@ -67,7 +67,7 @@ class HomepageAdminTest extends TestCase
     public function test_hero_slide_links_to_a_deck(): void
     {
         Storage::fake('public');
-        $deck = Deck::factory()->create(['deck_code' => 'DECK-011']);
+        $deck = Deck::factory()->create(['deck_code' => 'DECK-011', 'title' => 'Slow Burn']);
 
         Livewire::test(CreateHeroSlide::class)
             ->fillForm(['title' => 'Slow Burn', 'image' => UploadedFile::fake()->image('hero.jpg', 2400, 1200), 'target_type' => 'deck', 'deck_id' => $deck->id])
@@ -75,7 +75,7 @@ class HomepageAdminTest extends TestCase
             ->assertHasNoFormErrors();
 
         $slide = HeroSlide::firstOrFail();
-        $this->assertSame('/decks/deck-011', $slide->href());
+        $this->assertSame('/decks/slow-burn', $slide->href());
         Storage::disk('public')->assertExists($slide->image);
         $this->assertSame('Explore Deck', $slide->ctaLabel());
 

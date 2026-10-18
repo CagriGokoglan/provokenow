@@ -121,6 +121,7 @@ class CheckoutController extends Controller
                 ])->values(),
                 'unlocked_decks' => $order->entitlements->map(fn ($e) => [
                     'deck_code' => $e->deck->deck_code,
+                    'slug' => $e->deck->slug,
                     'title' => $e->deck->title,
                 ])->values(),
                 'requires_shipping' => (bool) ($order->metadata['requires_shipping'] ?? false),

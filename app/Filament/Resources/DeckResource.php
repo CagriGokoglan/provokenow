@@ -20,11 +20,13 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 
 class DeckResource extends Resource
 {
@@ -51,7 +53,25 @@ class DeckResource extends Resource
                         ->unique(ignoreRecord: true)
                         ->dehydrateStateUsing(fn (string $state) => strtoupper($state))
                         ->placeholder('DECK-001'),
-                    TextInput::make('title')->required()->maxLength(255),
+                    TextInput::make('title')
+                        ->required()
+                        ->maxLength(255)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (?string $state, Set $set, Get $get, string $operation) {
+                            if ($operation === 'create' || blank($get('slug'))) {
+                                $set('slug', Str::slug((string) $state));
+                            }
+                        }),
+                    TextInput::make('slug')
+                        ->label('URL')
+                        ->prefix('/decks/')
+                        ->maxLength(255)
+                        ->alphaDash()
+                        ->unique(ignoreRecord: true)
+                        ->notIn(Deck::reservedSlugs())
+                        ->validationMessages(['not_in' => 'That address belongs to a level page. Choose another.'])
+                        ->helperText('Filled in from the title. If you change it later, the old address keeps working (it redirects here).')
+                        ->columnSpanFull(),
                     Select::make('segment')->options(DeckSegment::class)->required()->native(false),
                     Select::make('intensity_level')
                         ->options([1 => '1 · Gentle', 2 => '2 · Warm', 3 => '3 · Hot', 4 => '4 · Intense'])

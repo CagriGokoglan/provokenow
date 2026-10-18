@@ -26,7 +26,7 @@ class DeckEditions
     {
         $products = Product::active()
             ->where(fn ($q) => $q->where('linked_deck_id', $deck->getKey())->orWhereHas('decks', fn ($d) => $d->whereKey($deck->getKey())))
-            ->with('decks:id,deck_code', 'category:id,name,slug')
+            ->with('decks:id,deck_code,slug', 'category:id,name,slug')
             ->get();
 
         // The deck's own linked products first (set in the admin), then anything else unlocking it.

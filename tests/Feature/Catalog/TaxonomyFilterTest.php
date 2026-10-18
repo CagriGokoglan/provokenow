@@ -101,7 +101,7 @@ class TaxonomyFilterTest extends TestCase
         $migration->down(); // back to the three-level schema
 
         $deckId = (string) Str::uuid7();
-        DB::table('decks')->insert(['id' => $deckId, 'deck_code' => 'DECK-099', 'title' => 'Old', 'segment' => 'Advanced_Taboo', 'intensity_level' => 4, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('decks')->insert(['id' => $deckId, 'deck_code' => 'DECK-099', 'slug' => 'old', 'title' => 'Old', 'segment' => 'Advanced_Taboo', 'intensity_level' => 4, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()]);
         $product = Product::factory()->accessory(['segments' => ['Medium_Spice', 'Advanced_Taboo']])->create();
 
         $migration->up();

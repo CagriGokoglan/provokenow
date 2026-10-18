@@ -40,7 +40,7 @@ class DeckController extends Controller
 
         // Metadata columns only: no cards, no AI prompt.
         $decks = Deck::active()
-            ->select(['id', 'deck_code', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'card_front_bg_url', 'card_back_bg_url'])
+            ->select(['id', 'deck_code', 'slug', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'card_front_bg_url', 'card_back_bg_url'])
             ->with(['categories' => fn ($q) => $q->active()->select('deck_categories.id', 'name', 'slug')])
             ->when($filters['segment'] ?? null, fn ($q, $segment) => $q->where('segment', $segment))
             ->when($filters['level'] ?? null, fn ($q, $level) => $q->where('segment', DeckSegment::fromSlug($level)->value))
@@ -79,9 +79,8 @@ class DeckController extends Controller
         SchemaGeneratorService $schema,
         DeckEditions $editions,
     ): JsonResponse {
-        $deck = Deck::active()->where('deck_code', strtoupper($deckCode))
-            ->with(['categories' => fn ($q) => $q->active()])
-            ->firstOrFail();
+        // {deckCode} is the deck's slug (or, for old links, an earlier slug or its code).
+        $deck = Deck::findForUrl($deckCode)?->load(['categories' => fn ($q) => $q->active()]) ?? abort(404);
         $user = $request->user('sanctum');
 
         $entitled = $user && ($user->isStaff() || $user->hasAccessToDeck($deck));
@@ -98,7 +97,7 @@ class DeckController extends Controller
             ->get();
 
         $totalCards = $deck->cards()->count();
-        $products = $deck->products()->active()->with('decks:id')->get();
+        $products = $deck->products()->active()->with('decks:id,deck_code,slug')->get();
         ['digital' => $digital, 'physical' => $physical] = $editions->editionsFor($deck);
         $owned = $editions->ownership($user, $deck);
         $credit = $physical ? min($owned['digital_credit_cents'], $physical->effectivePriceCents()) : 0;

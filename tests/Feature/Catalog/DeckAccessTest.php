@@ -50,6 +50,22 @@ class DeckAccessTest extends TestCase
         $this->getJson('/api/v1/decks')->assertJsonMissingPath('data.items.0.page_content');
     }
 
+    public function test_deck_urls_come_from_the_title_and_old_addresses_keep_resolving(): void
+    {
+        $deck = Deck::factory()->create(['deck_code' => 'DECK-300', 'title' => 'Velvet Hours']);
+        $this->assertSame('velvet-hours', $deck->slug);
+        $this->assertSame('velvet-hours-2', Deck::factory()->create(['title' => 'Velvet Hours'])->slug, 'Unique.');
+        $this->assertSame('taboo-deck', Deck::factory()->create(['title' => 'Taboo'])->slug, 'Never a level page.');
+
+        $deck->update(['slug' => 'velvet-hours-after-dark']);
+        $this->assertSame(['velvet-hours'], $deck->fresh()->previous_slugs);
+
+        foreach (['velvet-hours-after-dark', 'velvet-hours', 'deck-300', 'DECK-300'] as $address) {
+            $this->getJson("/api/v1/decks/{$address}")->assertOk()->assertJsonPath('data.deck.slug', 'velvet-hours-after-dark');
+        }
+        $this->getJson('/api/v1/decks/no-such-deck')->assertNotFound();
+    }
+
     public function test_authenticated_user_without_entitlement_sees_preview_only(): void
     {
         Sanctum::actingAs(User::factory()->create());
