@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\FlushesFrontendCache;
+use App\Support\LineBreaks;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,6 +25,16 @@ class Card extends Model
             'card_number' => 'integer',
             'content_payload' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Literal "\n" from pasted / double-encoded JSON becomes a real line break.
+        static::saving(function (Card $card) {
+            if ($card->isDirty('content_payload')) {
+                $card->content_payload = LineBreaks::fixAll($card->content_payload);
+            }
+        });
     }
 
     public function deck(): BelongsTo

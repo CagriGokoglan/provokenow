@@ -8,6 +8,7 @@ use App\Models\Concerns\FlushesFrontendCache;
 use App\Models\Concerns\OptimizesImages;
 use App\Services\Catalog\DigitalEdition;
 use App\Services\Media\ImageOptimizer;
+use App\Support\LineBreaks;
 use App\Support\MediaUrl;
 use App\Support\SvgSanitizer;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -34,6 +35,9 @@ class Deck extends Model
 
     /** Intensity is rated 1 (lowest) to 5 (highest), numbers only. */
     public const MAX_INTENSITY = 5;
+
+    /** Free text written in the admin or imported from JSON (line breaks matter in these). */
+    public const TEXT_FIELDS = ['whats_inside', 'how_to_play', 'who_its_for', 'core_theme_keywords', 'meta_description'];
 
     public const INTENSITY_OPTIONS = [1 => '1', 2 => '2', 3 => '3', 4 => '4', 5 => '5'];
 
@@ -102,6 +106,16 @@ class Deck extends Model
                 if ($deck->isDirty($field)) {
                     SvgSanitizer::sanitizeStored($deck->{$field}, $field);
                 }
+            }
+
+            // Literal "\n" from pasted / double-encoded JSON becomes a real line break.
+            foreach (self::TEXT_FIELDS as $field) {
+                if ($deck->isDirty($field)) {
+                    $deck->{$field} = LineBreaks::fix($deck->{$field});
+                }
+            }
+            if ($deck->isDirty('faqs')) {
+                $deck->faqs = LineBreaks::fixAll($deck->faqs);
             }
         });
 
