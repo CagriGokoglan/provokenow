@@ -9,6 +9,7 @@ use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 
 /** Account → Profile, Purchases and password. */
@@ -19,9 +20,16 @@ class AccountController extends Controller
         $data = $request->validate([
             'name' => ['sometimes', 'string', 'max:255'],
             'marketing_opt_in' => ['sometimes', 'boolean'],
+            'is_adult_unlocked' => ['sometimes', 'boolean'],
         ]);
 
         $user = $request->user();
+        if (array_key_exists('is_adult_unlocked', $data)) {
+            if ($data['is_adult_unlocked'] && ! $user->hasVerifiedEmail()) {
+                throw ValidationException::withMessages(['is_adult_unlocked' => 'Verify your email address first.']);
+            }
+            $user->setAdultUnlocked($data['is_adult_unlocked']);
+        }
         if (isset($data['name'])) {
             $user->update(['name' => $data['name']]);
         }

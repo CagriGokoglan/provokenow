@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\DeckSegment;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DeckResource;
 use App\Http\Resources\PostResource;
@@ -53,8 +54,8 @@ class BlogController extends Controller
                 'category',
                 'pillar' => fn ($q) => $q->published(),
                 'clusterPosts' => fn ($q) => $q->published()->orderByDesc('published_at'),
-                'decks' => fn ($q) => $q->active(),
-                'products' => fn ($q) => $q->storefront()->with('decks:id,deck_code,slug,title', 'category:id,name,slug'),
+                'decks' => fn ($q) => $q->active()->whereIn('segment', DeckSegment::visibleTo(false)),
+                'products' => fn ($q) => $q->storefront()->visibleTo(false)->with('decks:id,deck_code,slug,title', 'category:id,name,slug'),
             ])
             ->firstOrFail();
 

@@ -44,12 +44,15 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
 
     protected $attributes = [
         'role' => UserRole::Customer->value,
+        'is_adult_unlocked' => false,
     ];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
+            'is_adult_unlocked' => 'boolean',
+            'adult_unlocked_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
@@ -101,6 +104,24 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
     public function isStaff(): bool
     {
         return $this->role->isStaff();
+    }
+
+    /** A member who confirmed their email (staff always count). Card content needs this. */
+    public function isVerifiedMember(): bool
+    {
+        return $this->isStaff() || $this->hasVerifiedEmail();
+    }
+
+    /** Verified, and chose +18 "Passion mode": sees the Advanced and Taboo tiers. */
+    public function hasAdultAccess(): bool
+    {
+        return $this->isStaff() || ($this->hasVerifiedEmail() && $this->is_adult_unlocked);
+    }
+
+    /** Turns +18 Passion mode on or off (kept with the time it was last switched on). */
+    public function setAdultUnlocked(bool $on): void
+    {
+        $this->forceFill(['is_adult_unlocked' => $on, 'adult_unlocked_at' => $on ? now() : $this->adult_unlocked_at])->save();
     }
 
     public function isSuperAdmin(): bool

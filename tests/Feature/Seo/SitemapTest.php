@@ -54,14 +54,12 @@ class SitemapTest extends TestCase
             'https://provokenow.com/decks',
             'https://provokenow.com/decks/light-ignition',
             'https://provokenow.com/decks/medium-spice',
-            'https://provokenow.com/decks/advanced',
-            'https://provokenow.com/decks/taboo',
             'https://provokenow.com/decks/first-light',
             'https://provokenow.com/store/heels',
             'https://provokenow.com/store/silk-blindfold',
         ], $locs);
 
-        foreach (['/vault', '/checkout', '/user', '/cart', 'retired-deck', 'retired-product', 'hidden-category', '/api/', '?level=', '?category='] as $forbidden) {
+        foreach (['/decks/advanced', '/decks/taboo', '/vault', '/checkout', '/user', '/cart', 'retired-deck', 'retired-product', 'hidden-category', '/api/', '?level=', '?category='] as $forbidden) {
             $this->assertStringNotContainsString($forbidden, $response->getContent());
         }
 
@@ -73,7 +71,7 @@ class SitemapTest extends TestCase
         $path = tempnam(sys_get_temp_dir(), 'sitemap');
 
         $this->artisan('provoke:sitemap', ['--path' => $path])
-            ->expectsOutputToContain('9 URLs')
+            ->expectsOutputToContain('7 URLs')
             ->assertSuccessful();
 
         $xml = file_get_contents($path);

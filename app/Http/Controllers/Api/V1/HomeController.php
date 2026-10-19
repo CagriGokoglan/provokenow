@@ -16,6 +16,7 @@ use App\Models\SiteSetting;
 use App\Support\ApiResponse;
 use App\Support\YouTube;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 /**
  * Everything the homepage renders, in one request, in section order. Every section is
@@ -33,9 +34,12 @@ class HomeController extends Controller
     /** Cached with the page, so send a pool; the web app draws six from it per visit. */
     public const SHOWCASE_CARD_POOL = 36;
 
-    public function __invoke(): JsonResponse
+    public function __invoke(Request $request): JsonResponse
     {
-        $products = fn () => Product::storefront()->with(['decks:id,deck_code,slug,title', 'category:id,name,slug']);
+        // Card text is for verified members only; everyone else gets face-down cards.
+        $verified = (bool) $request->user('sanctum')?->isVerifiedMember();
+
+        $products = fn () => Product::storefront()->visibleTo(false)->with(['decks:id,deck_code,slug,title', 'category:id,name,slug']);
 
         $slides = HeroSlide::live()
             ->with(['deck:id,deck_code,slug,is_active', 'product:id,slug,is_active'])
@@ -64,8 +68,10 @@ class HomeController extends Controller
         return ApiResponse::success([
             'hero_slides' => $slides,
             'popular_products' => ProductResource::collection($products()->where('is_featured', true)->orderBy('sort_order')->orderBy('name')->limit(self::GRID_LIMIT)->get()),
-            'showcase_decks' => DeckResource::collection(Deck::active()->with(['categories' => fn ($q) => $q->active()])->orderBy('deck_code')->limit(self::SHOWCASE_LIMIT)->get()),
-            'showcase_cards' => $this->showcaseCards(),
+            // Advanced and Taboo never appear on the homepage.
+            'showcase_decks' => DeckResource::collection(Deck::active()->whereIn('segment', DeckSegment::visibleTo(false))->with(['categories' => fn ($q) => $q->active()])->orderBy('deck_code')->limit(self::SHOWCASE_LIMIT)->get()),
+            'showcase_cards' => $this->showcaseCards($verified),
+            'cards_revealed' => $verified,
             'boxed_games' => ProductResource::collection($products()->where('is_boxed_game', true)->orderBy('sort_order')->orderBy('name')->limit(self::SHOWCASE_LIMIT)->get()),
             'new_arrivals' => ProductResource::collection($products()->where('is_new_arrival', true)->orderBy('sort_order')->latest()->limit(self::GRID_LIMIT)->get()),
             'video' => [
@@ -93,7 +99,7 @@ class HomeController extends Controller
         ], 'Homepage.');
     }
 
-    private function showcaseCards(): array
+    private function showcaseCards(bool $revealed): array
     {
         return Card::query()
             ->where('card_number', '>', self::SHOWCASE_SKIP_CARDS)
@@ -103,7 +109,8 @@ class HomeController extends Controller
             ->limit(self::SHOWCASE_CARD_POOL)
             ->get()
             ->map(fn (Card $card) => [
-                'card' => new CardResource($card),
+                // Face down for guests: number only, no title or text.
+                'card' => $revealed ? new CardResource($card) : ['id' => $card->id, 'card_number' => $card->card_number, 'title' => null, 'content' => null],
                 'deck' => new DeckResource($card->deck),
                 'total_cards' => (int) $card->deck->cards_count,
             ])

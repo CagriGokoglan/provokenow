@@ -57,7 +57,8 @@ class SitemapGenerator
             yield ['loc' => FrontendUrl::to($path), 'changefreq' => $changefreq, 'priority' => $priority];
         }
 
-        foreach (DeckSegment::cases() as $level) {
+        // Advanced / Taboo are members-only (+18 Passion mode): never in the sitemap.
+        foreach (DeckSegment::visibleTo(false) as $level) {
             yield ['loc' => FrontendUrl::deckLevel($level), 'changefreq' => 'daily', 'priority' => '0.8'];
         }
 
@@ -80,7 +81,7 @@ class SitemapGenerator
             ];
         }
 
-        foreach (Deck::active()->orderBy('deck_code')->cursor() as $deck) {
+        foreach (Deck::active()->whereIn('segment', DeckSegment::visibleTo(false))->orderBy('deck_code')->cursor() as $deck) {
             yield [
                 'loc' => $deck->canonical_url ?: FrontendUrl::deck($deck),
                 'lastmod' => $deck->updated_at?->toAtomString(),
@@ -91,7 +92,7 @@ class SitemapGenerator
         }
 
         // Digital editions are reached through their deck page.
-        foreach (Product::storefront()->orderBy('slug')->cursor() as $product) {
+        foreach (Product::storefront()->visibleTo(false)->orderBy('slug')->cursor() as $product) {
             yield [
                 'loc' => $product->canonical_url ?: FrontendUrl::product($product),
                 'lastmod' => $product->updated_at?->toAtomString(),

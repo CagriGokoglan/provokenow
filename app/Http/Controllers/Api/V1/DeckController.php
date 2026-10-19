@@ -24,6 +24,12 @@ class DeckController extends Controller
 
     public const LOCK_VAULT = 'vault_locked';
 
+    /** Guests and unverified accounts: no card content at all. */
+    public const LOCK_VERIFY = 'verification_required';
+
+    /** Advanced / Taboo deck for a visitor without +18 Passion mode. */
+    public const LOCK_ADULT = 'adult_locked';
+
     public const SORTS = ['featured', 'bestsellers', 'newest', 'price_asc', 'price_desc'];
 
     public function index(Request $request): JsonResponse
@@ -41,8 +47,12 @@ class DeckController extends Controller
 
         $categories = array_slice(array_values(array_filter(array_map('trim', explode(',', $filters['category'] ?? '')))), 0, 20);
 
+        // Advanced and Taboo are listed only for members with +18 Passion mode on.
+        $adult = (bool) $request->user('sanctum')?->hasAdultAccess();
+
         // Metadata columns only: no cards, no AI prompt.
         $decks = Deck::active()
+            ->whereIn('segment', DeckSegment::visibleTo($adult))
             ->select(['id', 'deck_code', 'slug', 'title', 'segment', 'intensity_level', 'core_theme_keywords', 'card_front_bg_url', 'card_back_bg_url'])
             ->with(['categories' => fn ($q) => $q->active()->select('deck_categories.id', 'name', 'slug')])
             ->when($filters['segment'] ?? null, fn ($q, $segment) => $q->where('segment', $segment))
@@ -87,15 +97,27 @@ class DeckController extends Controller
         $user = $request->user('sanctum');
 
         $entitled = $user && ($user->isStaff() || $user->hasAccessToDeck($deck));
+
+        // Advanced / Taboo: hidden from anyone without +18 Passion mode (owners keep their decks).
+        if ($deck->segment->isAdultTier() && ! $entitled && ! $user?->hasAdultAccess()) {
+            return ApiResponse::error(
+                $user?->isVerifiedMember() ? 'Switch on Passion mode (18+) to see this deck.' : 'Sign in with a verified account to see this deck.',
+                403,
+                ['reason' => [self::LOCK_ADULT]],
+            );
+        }
+
         $lockReason = match (true) {
+            ! $user?->isVerifiedMember() => self::LOCK_VERIFY,
             ! $entitled => self::LOCK_NOT_ENTITLED,
             $vault->blocksDeck($user, $deck) => self::LOCK_VAULT,
             default => null,
         };
         $isLocked = $lockReason !== null;
 
-        // Locked: the public preview (the first N cards) only. The full deck is never serialised.
-        $cards = $deck->cards()
+        // Verified but not entitled: the preview (the first N cards) only. Guests and unverified
+        // accounts: no cards at all. The full deck is never serialised.
+        $cards = $lockReason === self::LOCK_VERIFY ? collect() : $deck->cards()
             ->when($isLocked, fn ($q) => $q->where('card_number', '<=', (int) config('provoke.deck_preview_cards')))
             ->get();
 
@@ -135,10 +157,11 @@ class DeckController extends Controller
             ],
             'cards' => CardResource::collection($cards),
             // Shown on the page (same list as the FAQPage schema).
-            'faqs' => $schema->deckFaqs($deck, $cards->firstWhere('card_number', 1), $totalCards, $products),
+            // Card text never appears in public FAQs or structured data.
+            'faqs' => $schema->deckFaqs($deck, null, $totalCards, $products),
             'seo' => $seo->forDeck($deck),
             // Built from the public preview card only, regardless of the viewer's access.
-            'schema_json_ld' => $schema->forDeck($deck, $cards->firstWhere('card_number', 1), $totalCards, $products),
+            'schema_json_ld' => $schema->forDeck($deck, null, $totalCards, $products),
         ], $isLocked ? 'Deck preview.' : 'Deck unlocked.');
     }
 }

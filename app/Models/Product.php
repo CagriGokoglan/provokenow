@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DeckSegment;
 use App\Enums\ProductType;
 use App\Models\Concerns\FlushesFrontendCache;
 use App\Models\Concerns\OptimizesImages;
@@ -165,5 +166,20 @@ class Product extends Model
     protected function active(Builder $query): void
     {
         $query->where('is_active', true);
+    }
+
+    /** Without +18 Passion mode, products tied to an Advanced or Taboo deck are not shown. */
+    #[Scope]
+    protected function visibleTo(Builder $query, bool $adult): void
+    {
+        if (! $adult) {
+            $query->whereDoesntHave('decks', fn ($d) => $d->whereIn('segment', DeckSegment::adultTiers()));
+        }
+    }
+
+    /** Tied to an Advanced or Taboo deck (needs +18 Passion mode to view or buy). */
+    public function isAdultTier(): bool
+    {
+        return $this->decks()->whereIn('segment', DeckSegment::adultTiers())->exists();
     }
 }

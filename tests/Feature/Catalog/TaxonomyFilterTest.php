@@ -8,11 +8,13 @@ use App\Models\Deck;
 use App\Models\DeckCategory;
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Models\User;
 use Database\Seeders\TaxonomySeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class TaxonomyFilterTest extends TestCase
@@ -55,6 +57,12 @@ class TaxonomyFilterTest extends TestCase
         Deck::factory()->segment(DeckSegment::Taboo, 4)->create(['deck_code' => 'DECK-003'])->categories()->attach($hidden);
 
         $codes = fn (string $query) => collect($this->getJson("/api/v1/decks?{$query}")->assertOk()->json('data.items'))->pluck('deck_code')->all();
+
+        // Guests never see the Advanced / Taboo tiers.
+        $this->assertSame(['DECK-001'], $codes(''));
+        $this->assertSame([], $codes('level=taboo'));
+        Sanctum::actingAs(User::factory()->adult()->create());
+        $this->withToken('member-token'); // signed-in requests skip the public response cache
 
         $this->assertSame(['DECK-001', 'DECK-002', 'DECK-003'], $codes(''));
         $this->assertSame(['DECK-002', 'DECK-003'], $codes('level=taboo'));

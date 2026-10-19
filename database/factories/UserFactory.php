@@ -42,4 +42,14 @@ class UserFactory extends Factory
             'email_verified_at' => null,
         ]);
     }
+
+    /** Verified, with +18 Passion mode on (sees the Advanced and Taboo tiers). */
+    public function adult(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => now(),
+            'is_adult_unlocked' => true,
+            'adult_unlocked_at' => now(),
+        ]);
+    }
 }

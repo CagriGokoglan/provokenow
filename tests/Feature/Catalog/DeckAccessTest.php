@@ -22,20 +22,59 @@ class DeckAccessTest extends TestCase
         $this->deck = Deck::factory()->withCards(50)->create(['deck_code' => 'DECK-001']);
     }
 
-    public function test_guest_cannot_see_full_deck_only_preview_card(): void
+    public function test_guests_and_unverified_accounts_see_no_card_content(): void
     {
         $response = $this->getJson('/api/v1/decks/DECK-001')
             ->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.is_locked', true)
-            ->assertJsonPath('data.lock_reason', 'not_entitled')
+            ->assertJsonPath('data.lock_reason', 'verification_required')
             ->assertJsonPath('data.total_cards', 50)
+            ->assertJsonCount(0, 'data.cards');
+        $this->assertStringNotContainsString('"Card 1"', $response->getContent(), 'Not even in FAQs or structured data.');
+
+        Sanctum::actingAs(User::factory()->unverified()->create());
+        $this->getJson('/api/v1/decks/DECK-001')->assertJsonPath('data.lock_reason', 'verification_required')->assertJsonCount(0, 'data.cards');
+    }
+
+    public function test_verified_member_sees_the_two_preview_cards_only(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+
+        $response = $this->getJson('/api/v1/decks/DECK-001')
+            ->assertJsonPath('data.lock_reason', 'not_entitled')
             ->assertJsonCount(2, 'data.cards')
             ->assertJsonPath('data.cards.0.card_number', 1)
             ->assertJsonPath('data.cards.1.card_number', 2);
-
-        // The free preview is the first two cards; nothing beyond them is serialised.
         $this->assertStringNotContainsString('"Card 3"', $response->getContent());
+    }
+
+    public function test_advanced_and_taboo_decks_need_passion_mode(): void
+    {
+        $taboo = Deck::factory()->segment(DeckSegment::Taboo, 5)->withCards(3)->create(['deck_code' => 'DECK-090']);
+
+        $this->getJson('/api/v1/decks/DECK-090')->assertForbidden()->assertJsonPath('errors.reason.0', 'adult_locked');
+        Sanctum::actingAs($member = User::factory()->create());
+        $this->withToken('member-token'); // signed-in requests skip the public response cache
+        $this->getJson('/api/v1/decks/DECK-090')->assertForbidden()->assertJsonPath('errors.reason.0', 'adult_locked');
+        $this->assertNotContains('DECK-090', collect($this->getJson('/api/v1/decks')->json('data.items'))->pluck('deck_code'));
+
+        // Switching Passion mode on (verified accounts only) opens the tier.
+        $this->patchJson('/api/v1/user/profile', ['is_adult_unlocked' => true])->assertOk()->assertJsonPath('data.user.is_adult_unlocked', true);
+        $this->getJson('/api/v1/decks/DECK-090')->assertOk()->assertJsonCount(2, 'data.cards');
+        $this->assertContains('DECK-090', collect($this->getJson('/api/v1/decks')->json('data.items'))->pluck('deck_code'));
+        $this->assertNotNull($member->fresh()->adult_unlocked_at);
+
+        $this->patchJson('/api/v1/user/profile', ['is_adult_unlocked' => false])->assertJsonPath('data.user.is_adult_unlocked', false);
+        $this->getJson('/api/v1/decks/DECK-090')->assertForbidden();
+
+        // Owners keep a deck they bought, whatever the switch.
+        $member->entitlements()->create(['deck_id' => $taboo->id, 'granted_at' => now()]);
+        $this->getJson('/api/v1/decks/DECK-090')->assertOk()->assertJsonCount(3, 'data.cards');
+
+        // Unverified accounts cannot switch it on.
+        Sanctum::actingAs(User::factory()->unverified()->create());
+        $this->patchJson('/api/v1/user/profile', ['is_adult_unlocked' => true])->assertUnprocessable()->assertJsonValidationErrors('is_adult_unlocked');
     }
 
     public function test_deck_page_content_is_written_per_deck(): void
@@ -105,6 +144,11 @@ class DeckAccessTest extends TestCase
     {
         Deck::factory()->inactive()->create(['deck_code' => 'DECK-002']);
         Deck::factory()->segment(DeckSegment::Taboo, 4)->create(['deck_code' => 'DECK-003']);
+
+        // Guests: Light / Medium only.
+        $this->getJson('/api/v1/decks')->assertJsonPath('data.pagination.total', 1);
+        Sanctum::actingAs(User::factory()->adult()->create());
+        $this->withToken('member-token'); // signed-in requests skip the public response cache
 
         $response = $this->getJson('/api/v1/decks')
             ->assertOk()

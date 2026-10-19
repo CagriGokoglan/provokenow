@@ -40,6 +40,7 @@ class ProductController extends Controller
 
         // The store never lists a deck's digital edition; that is sold on the deck page.
         $products = Product::storefront()
+            ->visibleTo((bool) $request->user('sanctum')?->hasAdultAccess())
             ->with(['decks:id,deck_code,slug,title', 'category:id,name,slug'])
             ->when($filters['product_type'] ?? null, fn ($q, $type) => $q->where('product_type', $type))
             ->when($filters['deck_code'] ?? null, fn ($q, $code) => $q->whereHas('decks', fn ($d) => $d->where('slug', strtolower($code))->orWhere('deck_code', strtoupper($code))))
@@ -70,9 +71,11 @@ class ProductController extends Controller
         return ApiResponse::paginated($products, ProductResource::class, 'Products retrieved.');
     }
 
-    public function show(string $slug, UpsellEngine $upsell, SeoMetadataService $seo, SchemaGeneratorService $schema): JsonResponse
+    public function show(Request $request, string $slug, UpsellEngine $upsell, SeoMetadataService $seo, SchemaGeneratorService $schema): JsonResponse
     {
         $product = Product::active()->where('slug', $slug)->with(['decks', 'category'])->firstOrFail();
+        // Advanced / Taboo products don't exist for visitors without +18 Passion mode.
+        abort_if($product->isAdultTier() && ! $request->user('sanctum')?->hasAdultAccess(), 404);
 
         return ApiResponse::success([
             'product' => new ProductResource($product),

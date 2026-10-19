@@ -17,6 +17,9 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'role' => $this->role->value,
             'email_verified_at' => $this->email_verified_at?->toIso8601String(),
+            'is_verified' => $this->resource->isVerifiedMember(),
+            // +18 Passion mode chosen, and allowed (needs a verified email).
+            'is_adult_unlocked' => $this->resource->hasAdultAccess(),
             'created_at' => $this->created_at?->toIso8601String(),
             'profile' => $this->whenLoaded('profile', fn () => [
                 'marketing_opt_in' => (bool) $this->profile?->marketing_opt_in,

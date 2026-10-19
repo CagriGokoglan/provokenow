@@ -46,6 +46,9 @@ class CartController extends Controller
     public function add(AddToCartRequest $request): JsonResponse
     {
         $product = Product::findOrFail($request->validated('product_id'));
+        if ($product->isAdultTier() && ! $request->user('sanctum')?->hasAdultAccess()) {
+            return ApiResponse::error('This item is for verified members with Passion mode (18+) switched on.', 403, ['reason' => [DeckController::LOCK_ADULT]]);
+        }
         $cart = $this->carts->resolve($request, create: true);
 
         $quantity = (int) $request->validated('quantity', 1);

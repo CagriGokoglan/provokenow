@@ -13,6 +13,24 @@ enum DeckSegment: string implements HasColor, HasLabel
     case Advanced = 'Advanced';
     case Taboo = 'Taboo';
 
+    /** Advanced and Taboo: only for verified members who switched on +18 Passion mode. */
+    public function isAdultTier(): bool
+    {
+        return in_array($this, self::adultTiers(), true);
+    }
+
+    /** @return list<self> */
+    public static function adultTiers(): array
+    {
+        return [self::Advanced, self::Taboo];
+    }
+
+    /** @return list<self> what a visitor may browse: everything with adult access, else Light and Medium */
+    public static function visibleTo(bool $adult): array
+    {
+        return $adult ? self::cases() : array_values(array_filter(self::cases(), fn (self $s) => ! $s->isAdultTier()));
+    }
+
     /** @return list<string> */
     public static function values(): array
     {

@@ -131,10 +131,10 @@ class SeoSchemaTest extends TestCase
         $questions = array_column($this->node($schema, 'FAQPage')['mainEntity'], 'name');
         $this->assertContains('What is After Midnight?', $questions);
         $this->assertContains('Is After Midnight available as a physical deck?', $questions);
-        $this->assertContains('What does a card from After Midnight look like?', $questions);
+        $this->assertNotContains('What does a card from After Midnight look like?', $questions, 'No card text in public schema.');
 
         $encoded = json_encode($schema);
-        $this->assertStringContainsString('Write a three-word invitation.', $encoded);
+        $this->assertStringNotContainsString('Write a three-word invitation.', $encoded);
         $this->assertStringNotContainsString('PAID-CONTENT-MARKER', $encoded);
 
         $skus = collect($schema['@graph'])->where('@type', 'Product')->pluck('sku')->sort()->values()->all();

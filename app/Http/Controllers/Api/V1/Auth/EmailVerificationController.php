@@ -12,6 +12,9 @@ use Illuminate\Http\Request;
 /**
  * The emailed link opens the web app, which posts the signed path here. No sign-in needed:
  * the link may be opened on another device. Responses carry a `reason` the page can act on.
+ *
+ * The page sends the member's +18 "Passion mode" choice with it (`adult_unlocked`); a valid
+ * signed link proves the inbox is theirs, so the choice is saved even if not signed in here.
  */
 class EmailVerificationController extends Controller
 {
@@ -23,12 +26,20 @@ class EmailVerificationController extends Controller
             return ApiResponse::error('This verification link is not valid.', 403, ['reason' => ['invalid']]);
         }
 
+        $choice = $request->validate(['adult_unlocked' => ['sometimes', 'boolean']]);
+        $signed = $request->hasValidRelativeSignature();
+
         if ($user->hasVerifiedEmail()) {
-            return ApiResponse::success(['verified' => true, 'already' => true], 'Your email is already verified.');
+            // Re-opening a still-valid link may change the choice; an old or forged one may not.
+            if ($signed && array_key_exists('adult_unlocked', $choice)) {
+                $user->setAdultUnlocked($choice['adult_unlocked']);
+            }
+
+            return ApiResponse::success(['verified' => true, 'already' => true, 'adult_unlocked' => $user->hasAdultAccess()], 'Your email is already verified.');
         }
 
         // Signature checked after the identity, so an expired link for a real account can offer a resend.
-        if (! $request->hasValidRelativeSignature()) {
+        if (! $signed) {
             $expired = (int) $request->query('expires') > 0 && (int) $request->query('expires') < now()->getTimestamp();
 
             return ApiResponse::error(
@@ -40,8 +51,11 @@ class EmailVerificationController extends Controller
 
         $user->markEmailAsVerified();
         event(new Verified($user));
+        if (array_key_exists('adult_unlocked', $choice)) {
+            $user->setAdultUnlocked($choice['adult_unlocked']);
+        }
 
-        return ApiResponse::success(['verified' => true, 'already' => false], 'Email verified.');
+        return ApiResponse::success(['verified' => true, 'already' => false, 'adult_unlocked' => $user->hasAdultAccess()], 'Email verified.');
     }
 
     /**

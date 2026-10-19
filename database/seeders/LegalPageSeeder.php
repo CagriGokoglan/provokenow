@@ -328,52 +328,6 @@ We believe intimacy deserves the same care as any luxury ritual. Our decks are w
 We answer every message within 1 business day.
 MD,
             ],
-            [
-                'slug' => 'brand-standard',
-                'title' => 'Brand Standard & Trademark Notice',
-                'seo_title' => "Brand Standard & Trademark Notice | {$brand}",
-                'seo_description' => "How the {$brand} name is written, who owns it, and how our card decks and content are protected.",
-                'content' => <<<MD
-This notice sets out the single, official way our brand is presented, and how **{$company}** protects the {$brand} name and content.
-
-## 1. The brand name
-
-The one correct form of the brand name is:
-
-**{$brand}**
-
-- Two words, written in capital letters, separated by a single space.
-- In running text the name always appears as "{$brand}", never as "Provoke Now", "ProvokeNow", "Provoke-Now", "PN" or any abbreviation, translation or variation.
-- The stylised wordmark (PROVOKE in capitals with *now* in italic lowercase) is used only in our official logo artwork. It is a design treatment of the same name, not a different name.
-
-## 2. Ownership and trademark
-
-{$brand}™, the {$brand} logo and wordmark, and the names of our decks and products are trademarks of **{$company}**. They may not be used in any domain name, social media account, product, advertisement or other material without our prior written permission, and may not be used in any way that suggests an endorsement or connection that does not exist.
-
-## 3. Copyright in our card decks
-
-Every {$brand} card deck, including each card's title, scenario, invitation and consent note, together with the deck descriptions, artwork, card designs, photographs and website content, is an original work protected by copyright and owned by {$company} or its licensors. All rights are reserved.
-
-Purchasing a deck gives you a personal, non-transferable licence to use it privately, as described in our [Terms of Service](/legal/terms-of-service). You may not copy, publish, resell, translate, record, adapt or redistribute any card or deck, in whole or in part, or use our content to train or build any artificial-intelligence model or dataset.
-
-## 4. Billing descriptor
-
-For transparency, every purchase from {$brand} appears on your card or bank statement as:
-
-**{$descriptor}**
-
-This is the legal name of the company that owns and operates {$brand}. If you see this name on your statement and have a question about the charge, contact [{$email}](mailto:{$email}) before contacting your bank.
-
-## 5. Reporting misuse
-
-If you believe someone is using the {$brand} name, logo or content without permission, or is selling counterfeit or copied decks, please tell us at [{$email}](mailto:{$email}).
-
-## 6. Contact
-
-{$company}  
-Email: [{$email}](mailto:{$email})
-MD,
-            ],
         ];
     }
 }
