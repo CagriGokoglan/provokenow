@@ -15,7 +15,7 @@ class EntitlementController extends Controller
         $entitlements = $request->user()->entitlements()
             ->valid()
             ->whereHas('deck', fn ($q) => $q->active())
-            ->with('deck')
+            ->with(['deck', 'gift'])
             ->latest('granted_at')
             ->get();
 

@@ -4,6 +4,7 @@ namespace App\Services\Access;
 
 use App\Enums\EntitlementStatus;
 use App\Mail\DigitalAccessGrantedMailable;
+use App\Models\Gift;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
@@ -36,11 +37,11 @@ class EntitlementService
      * @param  list<string>  $deckIds
      * @return Collection<int, UserEntitlement>
      */
-    public function grant(User|string $user, array $deckIds, ?Order $order = null, ?CarbonInterface $expiresAt = null): Collection
+    public function grant(User|string $user, array $deckIds, ?Order $order = null, ?CarbonInterface $expiresAt = null, ?Gift $gift = null): Collection
     {
         $userId = $user instanceof User ? $user->getKey() : $user;
 
-        $granted = collect(array_unique($deckIds))->map(function (string $deckId) use ($userId, $order, $expiresAt) {
+        $granted = collect(array_unique($deckIds))->map(function (string $deckId) use ($userId, $order, $expiresAt, $gift) {
             $existing = UserEntitlement::query()
                 ->where('user_id', $userId)
                 ->where('deck_id', $deckId)
@@ -64,6 +65,9 @@ class EntitlementService
                 'user_id' => $userId,
                 'deck_id' => $deckId,
                 'order_id' => $order?->getKey(),
+                // A gift keeps its order (a refund revokes it) and records who it came from.
+                'acquired_via' => $gift ? 'gift' : ($order ? 'purchase' : 'grant'),
+                'gift_id' => $gift?->getKey(),
                 'granted_at' => now(),
                 'expires_at' => $expiresAt,
                 'status' => EntitlementStatus::Active,

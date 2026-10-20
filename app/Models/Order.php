@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 #[Fillable([
@@ -70,6 +71,12 @@ class Order extends Model
     }
 
     /** chaperone(): each item knows its order without another query (admin infolist, emails). */
+    /** Set when the order was bought as a gift for someone else. */
+    public function gift(): HasOne
+    {
+        return $this->hasOne(Gift::class);
+    }
+
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class)->chaperone('order');

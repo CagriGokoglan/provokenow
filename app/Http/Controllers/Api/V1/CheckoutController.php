@@ -103,7 +103,7 @@ class CheckoutController extends Controller
      */
     public function status(string $sessionId): JsonResponse
     {
-        $order = $this->orderForSession($sessionId)->load('items', 'entitlements.deck');
+        $order = $this->orderForSession($sessionId)->load('items', 'entitlements.deck', 'gift');
 
         return ApiResponse::success([
             'order' => [
@@ -119,12 +119,17 @@ class CheckoutController extends Controller
                     'quantity' => $i->quantity,
                     'subtotal_cents' => $i->subtotal_cents,
                 ])->values(),
-                'unlocked_decks' => $order->entitlements->map(fn ($e) => [
+                // The buyer's own decks (a gift's decks go to its recipient).
+                'unlocked_decks' => $order->entitlements->where('user_id', $order->user_id)->map(fn ($e) => [
                     'deck_code' => $e->deck->deck_code,
                     'slug' => $e->deck->slug,
                     'title' => $e->deck->title,
                 ])->values(),
                 'requires_shipping' => (bool) ($order->metadata['requires_shipping'] ?? false),
+                'gift' => $order->gift ? [
+                    'recipient_email' => $order->gift->recipient_email,
+                    'scheduled_for' => $order->gift->deliver_at?->isFuture() ? $order->gift->deliver_at->toIso8601String() : null,
+                ] : null,
                 'payment_gateway' => $order->payment_gateway,
                 // TEST MODE page: what it must collect (Stripe collects these on its own page).
                 'needs_email' => $order->customer_email === null,

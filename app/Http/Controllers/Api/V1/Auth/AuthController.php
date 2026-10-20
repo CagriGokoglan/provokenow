@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Api\V1\Auth;
 
+use App\Enums\GiftStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
+use App\Models\Gift;
 use App\Models\User;
+use App\Services\Gifts\GiftService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -28,8 +31,20 @@ class AuthController extends Controller
             return $user;
         });
 
+        // From a gift invitation: link the gift. The link reached this inbox, so the same address
+        // needs no separate verification email.
+        $gift = filled($request->input('claim_token')) ? Gift::findByToken((string) $request->input('claim_token')) : null;
+        if ($gift?->isClaimable() && $gift->recipient_id === null) {
+            app(GiftService::class)->attach($gift, $user);
+            if ($gift->recipient_email === $user->email) {
+                $user->markEmailAsVerified();
+            }
+        }
+
         // Queued (after commit): the response doesn't wait for Brevo.
-        $user->sendEmailVerificationNotification();
+        if (! $user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
+        }
 
         return ApiResponse::success(
             $this->tokenPayload($user, $request->input('device_name')),
@@ -62,7 +77,12 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         return ApiResponse::success(
-            ['user' => new UserResource($request->user()->load('profile'))],
+            [
+                'user' => new UserResource($request->user()->load('profile')),
+                // Gifts waiting for this account's 18+ confirmation (the claim pop-up).
+                'unclaimed_gifts' => Gift::where('recipient_id', $request->user()->getKey())->where('status', GiftStatus::Sent)->whereNotNull('claim_token_hash')
+                    ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))->count(),
+            ],
             'Authenticated user.',
         );
     }

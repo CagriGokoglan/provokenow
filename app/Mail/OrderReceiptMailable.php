@@ -4,6 +4,7 @@ namespace App\Mail;
 
 use App\Mail\Concerns\OrderEmailData;
 use App\Models\Order;
+use App\Services\Gifts\GiftService;
 use App\Support\FrontendUrl;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -32,16 +33,24 @@ class OrderReceiptMailable extends Mailable
 
     public function content(): Content
     {
-        $this->order->loadMissing('entitlements.deck');
+        $this->order->loadMissing('entitlements.deck', 'gift');
+        $gift = $this->order->gift;
 
         return new Content(view: 'emails.order-receipt', with: [
             ...$this->orderData($this->order),
+            // A gift's decks belong to the recipient, never listed as the buyer's.
             'decks' => $this->order->entitlements
-                ->filter(fn ($e) => $e->deck !== null)
+                ->filter(fn ($e) => $e->deck !== null && $e->user_id === $this->order->user_id)
                 ->map(fn ($e) => ['title' => $e->deck->title, 'code' => $e->deck->deck_code, 'url' => FrontendUrl::libraryDeck($e->deck)])
                 ->values()
                 ->all(),
             'library_url' => FrontendUrl::to('/account/library'),
+            'gift' => $gift ? [
+                'recipient' => $gift->recipient_email,
+                'when' => $gift->deliver_at?->isFuture()
+                    ? $gift->deliver_at->setTimezone(GiftService::DELIVERY_TIMEZONE)->format('F j, Y')
+                    : null,
+            ] : null,
         ]);
     }
 }

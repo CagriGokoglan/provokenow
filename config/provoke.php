@@ -91,7 +91,7 @@ return [
             ['/decks', 'daily', '0.9'],
             ['/store', 'daily', '0.9'],
             ['/blog', 'weekly', '0.7'],
-            // Add /about, /faq… here once those pages exist on the web app.
+            ['/pages/how-gifting-works', 'monthly', '0.5'],
         ],
 
         // Never emitted in the sitemap, even if misconfigured above.

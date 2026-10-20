@@ -120,6 +120,19 @@ class OrderResource extends Resource
                             : null),
                 ]),
             ]),
+            Section::make('Gift')
+                ->description('Bought for someone else. For a parcel, print the note on a plain card; never include prices.')
+                ->visible(fn (Order $o) => $o->gift !== null)
+                ->columns(3)
+                ->schema([
+                    TextEntry::make('gift.recipient_email')->label('Recipient')->copyable(),
+                    TextEntry::make('gift.sender_alias')->label('From (shown as)')->placeholder('Someone special'),
+                    TextEntry::make('gift.status')->label('Gift status')->badge(),
+                    TextEntry::make('gift.gift_message')->label('Gift note')->placeholder('No note')->columnSpanFull()->extraAttributes(['style' => 'white-space: pre-line']),
+                    TextEntry::make('gift.deliver_at')->label('Email scheduled')->dateTime('M j, Y H:i')->placeholder('Right after payment'),
+                    TextEntry::make('gift.sent_at')->label('Emailed')->dateTime('M j, Y H:i')->placeholder('Not yet'),
+                    TextEntry::make('gift.claimed_at')->label('Claimed')->dateTime('M j, Y H:i')->placeholder('Not yet'),
+                ]),
             Grid::make(3)->schema([
                 Section::make('Shipping address')->columnSpan(1)->schema([
                     KeyValueEntry::make('shipping_address')->hiddenLabel()->placeholder('No shipping required'),

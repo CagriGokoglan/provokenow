@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\ClubController;
 use App\Http\Controllers\Api\V1\ContactController;
 use App\Http\Controllers\Api\V1\DeckController;
+use App\Http\Controllers\Api\V1\Gifts\GiftController;
 use App\Http\Controllers\Api\V1\HomeController;
 use App\Http\Controllers\Api\V1\LegalPageController;
 use App\Http\Controllers\Api\V1\OrderFulfillmentController;
@@ -80,6 +81,8 @@ Route::prefix('v1')->name('v1.')->group(function () {
     });
     Route::post('checkout/intent', [CheckoutController::class, 'intent'])->middleware('throttle:cart')->name('checkout.intent');
     Route::post('checkout/session', [CheckoutController::class, 'session'])->middleware('throttle:cart')->name('checkout.session');
+    Route::post('checkout/gift', [GiftController::class, 'checkout'])->middleware(['auth:sanctum', 'throttle:cart'])->name('checkout.gift');
+    Route::get('gifts/claim/{token}', [GiftController::class, 'show'])->where('token', '[A-Za-z0-9]{20,100}')->middleware('throttle:30,1')->name('gifts.show');
     Route::get('checkout/status/{sessionId}', [CheckoutController::class, 'status'])
         ->where('sessionId', 'cs_[A-Za-z0-9_]{10,255}')
         ->middleware('throttle:cart')
@@ -106,6 +109,9 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::delete('addresses/{id}', [AddressController::class, 'destroy'])->whereUuid('id')->name('addresses.destroy');
         Route::post('vault/passcode', [VaultController::class, 'setPasscode'])->middleware('throttle:vault')->name('vault.passcode');
         Route::post('vault/verify', [VaultController::class, 'verify'])->middleware('throttle:vault')->name('vault.verify');
+        Route::get('gifts/pending', [GiftController::class, 'pending'])->name('gifts.pending');
+        Route::post('gifts/attach', [GiftController::class, 'attach'])->middleware('throttle:10,1')->name('gifts.attach');
+        Route::post('gifts/{id}/claim', [GiftController::class, 'claim'])->whereUuid('id')->name('gifts.claim');
     });
 
     // Simulated payment webhook — test environments only, never in production.

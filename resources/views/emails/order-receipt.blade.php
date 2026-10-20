@@ -6,7 +6,11 @@
 
 @section('content')
 <p style="margin:0 0 16px;">{{ $customer_name ? "Dear {$customer_name}," : 'Hello,' }}</p>
+@if ($gift ?? null)
+<p style="margin:0;">Your gift is confirmed. We {{ $gift['when'] ? 'will email '.$gift['recipient'].' on '.$gift['when'] : 'have emailed '.$gift['recipient'] }} with your note{{ $requires_shipping ? ', and the parcel ships discreetly to the address you entered at checkout' : '' }}. Nothing in the email or parcel shows the price.</p>
+@else
 <p style="margin:0;">Your order is confirmed{{ count($decks) && $requires_shipping ? ': your decks are unlocked and your parcel is being prepared.' : (count($decks) ? ' and your decks are unlocked.' : ' and is being prepared for dispatch.') }}</p>
+@endif
 
 @if (count($decks))
 <p style="margin:30px 0 8px;font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#D4AF37;">Your decks are ready</p>

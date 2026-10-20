@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * Extends Pivot so it can back User::accessibleDecks(), but is used as a full model
  * (own UUID primary key, timestamps) everywhere else.
  */
-#[Fillable(['user_id', 'deck_id', 'order_id', 'granted_at', 'expires_at', 'status'])]
+#[Fillable(['user_id', 'deck_id', 'order_id', 'acquired_via', 'gift_id', 'granted_at', 'expires_at', 'status'])]
 class UserEntitlement extends Pivot
 {
     use HasUuids;
@@ -46,6 +46,12 @@ class UserEntitlement extends Pivot
     public function deck(): BelongsTo
     {
         return $this->belongsTo(Deck::class);
+    }
+
+    /** Set when the deck arrived as a gift (acquired_via = gift). */
+    public function gift(): BelongsTo
+    {
+        return $this->belongsTo(Gift::class);
     }
 
     public function order(): BelongsTo

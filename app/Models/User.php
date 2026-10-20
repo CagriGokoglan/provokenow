@@ -53,6 +53,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
             'email_verified_at' => 'datetime',
             'is_adult_unlocked' => 'boolean',
             'adult_unlocked_at' => 'datetime',
+            'age_confirmed_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];

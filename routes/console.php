@@ -9,6 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('provoke:sitemap')->hourly()->withoutOverlapping();
+Schedule::command('gifts:deliver')->everyFiveMinutes()->withoutOverlapping();
 
 // Queue worker without a process manager: cron runs schedule:run every minute, and this drains
 // the queue (order emails, Meta events, image optimisation) and exits before the next minute.

@@ -27,6 +27,8 @@ class RegisterRequest extends FormRequest
             'password' => ['required', 'string', 'confirmed', Password::min(10)->letters()->mixedCase()->numbers()],
             'marketing_opt_in' => ['sometimes', 'boolean'],
             'device_name' => ['sometimes', 'string', 'max:100'],
+            // Registering from a gift invitation (claim link).
+            'claim_token' => ['sometimes', 'nullable', 'string', 'max:100'],
         ];
     }
 }

@@ -11,6 +11,7 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Services\Access\EntitlementService;
+use App\Services\Gifts\GiftService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -36,10 +37,13 @@ class OrderFulfillmentService
                 throw new BusinessRuleException('A refunded order cannot be marked as paid.', 409);
             }
 
-            $order->load('items.product.decks');
+            $order->load('items.product.decks', 'gift');
 
             $this->decrementStock($order);
-            $this->grantDeckAccess($order);
+            // A gift's decks go to the recipient when they claim it, not to the buyer.
+            if (! $order->gift) {
+                $this->grantDeckAccess($order);
+            }
 
             $requiresShipping = $order->items->contains(fn ($item) => $item->product->requiresShipping());
 
@@ -57,6 +61,9 @@ class OrderFulfillmentService
 
             // Listeners queue their jobs after commit, so a rollback sends nothing.
             OrderPaid::dispatch($order);
+            if ($order->gift) {
+                DB::afterCommit(fn () => app(GiftService::class)->orderPaid($order->fresh('gift')));
+            }
 
             return $order;
         });
@@ -74,6 +81,7 @@ class OrderFulfillmentService
                     'payment_status' => PaymentStatus::Failed,
                     'metadata' => [...($order->metadata ?? []), 'failure_reason' => $reason],
                 ]);
+                app(GiftService::class)->cancelFor($order);
             }
 
             return $order;
@@ -98,6 +106,7 @@ class OrderFulfillmentService
             }
 
             $order->update(['payment_status' => PaymentStatus::Refunded, 'metadata' => $metadata]);
+            app(GiftService::class)->cancelFor($order);
             $order->entitlements()
                 ->where('status', EntitlementStatus::Active->value)
                 ->update(['status' => EntitlementStatus::Revoked->value, 'updated_at' => now()]);
