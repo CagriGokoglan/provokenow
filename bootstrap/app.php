@@ -2,6 +2,8 @@
 
 use App\Http\Middleware\CachePublicResponse;
 use App\Http\Middleware\EnsureUserIsStaff;
+use App\Http\Middleware\SecurityHeaders;
+use App\Http\Middleware\TrustProxies;
 use App\Support\ApiResponse;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -22,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // The visitor's IP from the web app's server (see the class), and security headers.
+        $middleware->replace(Illuminate\Http\Middleware\TrustProxies::class, TrustProxies::class);
+        $middleware->append(SecurityHeaders::class);
+
         $middleware->alias([
             'staff' => EnsureUserIsStaff::class,
             'cache.public' => CachePublicResponse::class,

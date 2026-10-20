@@ -144,6 +144,12 @@ return [
     ],
 
     /*
+    | Extra reverse proxies allowed to pass the visitor's IP (X-Forwarded-For), comma-separated.
+    | Loopback and this server's own address are always trusted (the web app's BFF).
+    */
+    'trusted_proxies' => array_values(array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', ''))))),
+
+    /*
     | The company behind the site, as named in the legal pages and on card statements.
     */
     'company' => [

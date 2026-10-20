@@ -85,12 +85,13 @@ class ContactController extends Controller
         return $this->sent();
     }
 
-    /** The visitor's IP: forwarded by the web app's server-side proxy, else the connection's. */
+    /**
+     * The visitor's IP. X-Forwarded-For is honoured only from trusted proxies (the web app's own
+     * server, see TrustProxies); a forged header from anyone else is ignored.
+     */
     public static function clientIp(Request $request): string
     {
-        $forwarded = trim(explode(',', (string) $request->header('X-Forwarded-For'))[0]);
-
-        return filter_var($forwarded, FILTER_VALIDATE_IP) ? $forwarded : (string) $request->ip();
+        return (string) $request->ip();
     }
 
     private function sent(): JsonResponse

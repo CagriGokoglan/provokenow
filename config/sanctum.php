@@ -51,7 +51,9 @@ return [
     |
     */
 
-    'expiration' => null,
+    // Sign-in tokens expire after 30 days (the web app's cookie lifetime), so a stolen token
+    // stops working; expired rows are pruned daily (routes/console.php).
+    'expiration' => (int) env('SANCTUM_EXPIRATION', 60 * 24 * 30),
 
     /*
     |--------------------------------------------------------------------------
