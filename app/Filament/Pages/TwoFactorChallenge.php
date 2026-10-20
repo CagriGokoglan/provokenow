@@ -9,7 +9,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Pages\SimplePage;
+use Illuminate\Validation\ValidationException;
 
 /** Step 2 of the admin sign-in: the 6-digit code from the authenticator app (or a recovery code). */
 class TwoFactorChallenge extends SimplePage implements HasForms
@@ -23,6 +25,14 @@ class TwoFactorChallenge extends SimplePage implements HasForms
     public ?array $data = [];
 
     public bool $useRecovery = false;
+
+    /** Seconds until "Resend email code" is available again (counted down in the browser). */
+    public int $emailCooldown = 0;
+
+    public bool $emailSent = false;
+
+    /** Changes on each send, so the countdown restarts. */
+    public int $emailSentAt = 0;
 
     public function mount(): void
     {
@@ -48,9 +58,37 @@ class TwoFactorChallenge extends SimplePage implements HasForms
 
     public function getSubheading(): string
     {
-        return $this->useRecovery
-            ? 'Enter one of your recovery codes. Each code works once.'
-            : 'Enter the verification code from your authenticator app.';
+        return match (true) {
+            $this->useRecovery => 'Enter one of your recovery codes. Each code works once.',
+            $this->emailSent => 'A security code has been sent to your registered email address. Please enter the 6-digit code below.',
+            default => 'Enter the verification code from your authenticator app.',
+        };
+    }
+
+    /** "Lost access to device? Send code via email" (never shows the address). */
+    public function sendEmailCode(TwoFactor $twoFactor): void
+    {
+        $user = Filament::auth()->user();
+        if (! $user) {
+            $this->redirect(Filament::getLoginUrl());
+
+            return;
+        }
+
+        try {
+            $twoFactor->sendEmailCode($user, request()->ip());
+        } catch (ValidationException $e) {
+            Notification::make()->danger()->title($e->errors()['code'][0] ?? 'Could not send a code.')->send();
+
+            return;
+        }
+
+        $this->useRecovery = false;
+        $this->emailSent = true;
+        $this->emailCooldown = 60;
+        $this->emailSentAt = now()->getTimestamp();
+        $this->form->fill();
+        Notification::make()->success()->title('Security code sent')->body('Check your registered email address.')->send();
     }
 
     public function form(Form $form): Form

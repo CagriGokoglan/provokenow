@@ -76,7 +76,20 @@ class AuthController extends Controller
         );
     }
 
-    /** Step 2 of a two-factor sign-in: the challenge from login() plus an app or recovery code. */
+    /**
+     * "Lost access to device?": emails a one-time code for this sign-in to the account's own
+     * address. The response never names the address.
+     */
+    public function twoFactorEmail(Request $request, TwoFactor $twoFactor): JsonResponse
+    {
+        $data = $request->validate(['challenge' => ['required', 'string', 'max:2000']]);
+
+        $twoFactor->sendEmailCode($twoFactor->userForChallenge($data['challenge']), $request->ip());
+
+        return ApiResponse::success(['cooldown_seconds' => 60], 'A security code has been sent to your registered email address. Please enter the 6-digit code below.');
+    }
+
+    /** Step 2 of a two-factor sign-in: the challenge from login() plus an app, email or recovery code. */
     public function twoFactor(Request $request, TwoFactor $twoFactor): JsonResponse
     {
         $data = $request->validate([

@@ -6,9 +6,11 @@ use App\Enums\UserRole;
 use App\Filament\Pages\Security;
 use App\Filament\Pages\TwoFactorChallenge;
 use App\Http\Middleware\RequireTwoFactor;
+use App\Mail\TwoFactorEmailCodeMailable;
 use App\Models\User;
 use App\Services\Auth\TwoFactor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use PragmaRX\Google2FA\Google2FA;
@@ -154,6 +156,67 @@ class TwoFactorTest extends TestCase
         $this->assertTrue($admin->fresh()->hasTwoFactorEnabled());
         Livewire::test(Security::class)->callAction('disable', data: ['password' => 'Admin-Pass-123', 'code' => $this->codeFor($admin, 1)]);
         $this->assertFalse($admin->fresh()->hasTwoFactorEnabled());
+    }
+
+    private function sentEmailCode(): string
+    {
+        $code = null;
+        Mail::assertSent(TwoFactorEmailCodeMailable::class, function (TwoFactorEmailCodeMailable $m) use (&$code) {
+            $code = $m->code;
+
+            return true;
+        });
+
+        return (string) $code;
+    }
+
+    public function test_lost_device_email_code_signs_in_once_and_is_limited(): void
+    {
+        Mail::fake();
+        $admin = $this->admin(['email' => 'staff@example.com']);
+        $this->enable($admin);
+        $challenge = $this->postJson('/api/v1/auth/login', ['email' => 'staff@example.com', 'password' => 'Admin-Pass-123'])->json('data.challenge');
+
+        $response = $this->postJson('/api/v1/auth/two-factor/email', ['challenge' => $challenge])->assertOk()->assertJsonPath('data.cooldown_seconds', 60);
+        $this->assertStringNotContainsString('staff@example.com', $response->getContent(), 'Never shows the address.');
+        Mail::assertSent(TwoFactorEmailCodeMailable::class, fn ($m) => $m->hasTo('staff@example.com') && $m->envelope()->subject === 'Admin Panel Login Verification Code');
+        $code = $this->sentEmailCode();
+        $this->assertMatchesRegularExpression('/^\d{6}$/', $code);
+        $this->assertStringContainsString($code, (new TwoFactorEmailCodeMailable($code, 10))->render());
+
+        $this->postJson('/api/v1/auth/two-factor', ['challenge' => $challenge, 'code' => $code])->assertOk()->assertJsonStructure(['data' => ['token']]);
+        $this->postJson('/api/v1/auth/two-factor', ['challenge' => $challenge, 'code' => $code])->assertUnprocessable(); // single use
+
+        // Expires after 10 minutes.
+        $this->postJson('/api/v1/auth/two-factor/email', ['challenge' => $challenge])->assertOk();
+        $late = $this->sentEmailCode();
+        $this->travel(11)->minutes();
+        $fresh = $this->postJson('/api/v1/auth/login', ['email' => 'staff@example.com', 'password' => 'Admin-Pass-123'])->json('data.challenge');
+        $this->postJson('/api/v1/auth/two-factor', ['challenge' => $fresh, 'code' => $late])->assertUnprocessable();
+
+        // Three emails per 15 minutes: the third is sent, the fourth refused.
+        $this->travelBack();
+        $this->postJson('/api/v1/auth/two-factor/email', ['challenge' => $fresh])->assertOk();
+        $this->postJson('/api/v1/auth/two-factor/email', ['challenge' => $fresh])->assertUnprocessable()->assertJsonValidationErrors('code');
+    }
+
+    public function test_admin_code_screen_can_send_an_email_code(): void
+    {
+        Mail::fake();
+        $admin = $this->admin();
+        $this->enable($admin);
+        $this->actingAs($admin);
+
+        Livewire::test(TwoFactorChallenge::class)
+            ->assertSee('Lost access to device? Send code via email')
+            ->call('sendEmailCode')
+            ->assertNotified('Security code sent')
+            ->assertSet('emailCooldown', 60)
+            ->assertSee('registered email address')
+            ->assertDontSee($admin->email);
+
+        Livewire::test(TwoFactorChallenge::class)->set('data.code', $this->sentEmailCode())->call('verify')->assertHasNoErrors()->assertRedirect();
+        $this->get('/admin')->assertOk();
     }
 
     public function test_customers_cannot_reach_the_admin_or_its_2fa_pages(): void

@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\Mail\TwoFactorEmailCodeMailable;
 use App\Models\User;
 use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\ImageRenderer;
@@ -9,6 +10,7 @@ use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -36,6 +38,14 @@ class TwoFactor
 
     /** Sign-in step between the password and the code (site sign-in). */
     private const CHALLENGE_MINUTES = 5;
+
+    /** "Lost access to device?": a one-time code by email, valid this long. */
+    public const EMAIL_CODE_MINUTES = 10;
+
+    /** Email codes allowed per account (and per IP) in EMAIL_CODE_WINDOW minutes. */
+    public const EMAIL_CODE_MAX = 3;
+
+    public const EMAIL_CODE_WINDOW = 15;
 
     public function __construct(private readonly Google2FA $google2fa) {}
 
@@ -94,6 +104,30 @@ class TwoFactor
         return count((array) $user->two_factor_recovery_codes);
     }
 
+    /**
+     * Emails a one-time 6-digit sign-in code to the account's own address (the fallback when the
+     * authenticator app is unavailable). Only its keyed hash is cached; a new code replaces the
+     * old one. Limited to EMAIL_CODE_MAX per EMAIL_CODE_WINDOW minutes per account and per IP.
+     */
+    public function sendEmailCode(User $user, ?string $ip = null): void
+    {
+        $keys = array_filter(['two-factor-email:'.$user->getKey(), $ip ? 'two-factor-email-ip:'.$ip : null]);
+        foreach ($keys as $key) {
+            if (RateLimiter::tooManyAttempts($key, self::EMAIL_CODE_MAX)) {
+                throw ValidationException::withMessages(['code' => 'Too many email codes. Try again in '.ceil(RateLimiter::availableIn($key) / 60).' minutes.']);
+            }
+        }
+        foreach ($keys as $key) {
+            RateLimiter::hit($key, self::EMAIL_CODE_WINDOW * 60);
+        }
+
+        $code = str_pad((string) random_int(0, 999_999), 6, '0', STR_PAD_LEFT);
+        Cache::put($this->emailCodeKey($user), $this->hashCode($code), now()->addMinutes(self::EMAIL_CODE_MINUTES));
+
+        // Sent now (not queued): the person is waiting at the sign-in screen.
+        Mail::to($user->email)->send(new TwoFactorEmailCodeMailable($code, self::EMAIL_CODE_MINUTES));
+    }
+
     /** Short-lived, encrypted proof that the password was right (site sign-in, step 1 of 2). */
     public function issueChallenge(User $user): string
     {
@@ -131,8 +165,10 @@ class TwoFactor
         }
 
         $code = trim($code);
-        $ok = preg_match('/^\d{6}$/', str_replace(' ', '', $code))
-            ? $this->validTotp($user, str_replace(' ', '', $code))
+        $digits = str_replace(' ', '', $code);
+        $ok = preg_match('/^\d{6}$/', $digits)
+            // Six digits: the authenticator app, or (at sign-in) a code sent by email.
+            ? $this->validTotp($user, $digits) || ($allowRecovery && $this->useEmailCode($user, $digits))
             : ($allowRecovery && $this->useRecoveryCode($user, $code));
 
         if (! $ok) {
@@ -151,6 +187,24 @@ class TwoFactor
 
         // Each code works once: a code seen over someone's shoulder can't be replayed.
         return Cache::add('two-factor-used:'.$user->getKey().':'.$code, true, now()->addMinutes(2));
+    }
+
+    private function useEmailCode(User $user, string $code): bool
+    {
+        $stored = Cache::get($this->emailCodeKey($user));
+        if (! is_string($stored) || ! hash_equals($stored, $this->hashCode($code))) {
+            return false;
+        }
+
+        // Single use.
+        Cache::forget($this->emailCodeKey($user));
+
+        return true;
+    }
+
+    private function emailCodeKey(User $user): string
+    {
+        return 'two-factor-email-code:'.$user->getKey();
     }
 
     private function useRecoveryCode(User $user, string $code): bool

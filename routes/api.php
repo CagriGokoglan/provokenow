@@ -33,6 +33,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
             Route::post('register', [AuthController::class, 'register'])->name('register');
             Route::post('login', [AuthController::class, 'login'])->name('login');
             Route::post('two-factor', [AuthController::class, 'twoFactor'])->name('two-factor');
+            Route::post('two-factor/email', [AuthController::class, 'twoFactorEmail'])->name('two-factor.email');
             Route::post('forgot-password', [PasswordResetController::class, 'forgot'])->name('password.forgot');
             Route::post('reset-password', [PasswordResetController::class, 'reset'])->name('password.reset');
         });
