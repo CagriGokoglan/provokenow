@@ -7,6 +7,8 @@ return [
     | have a random password generated (and printed once) at seed time.
     */
     'admin' => [
+        // Staff must use two-factor authentication: without it they are sent to set it up.
+        'require_two_factor' => (bool) env('ADMIN_REQUIRE_2FA', true),
         'name' => env('ADMIN_NAME', 'Provoke Now Admin'),
         'email' => env('ADMIN_EMAIL', 'admin@provokenow.com'),
         'password' => env('ADMIN_PASSWORD'),

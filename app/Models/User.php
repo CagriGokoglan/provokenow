@@ -24,7 +24,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 // `role` is intentionally not mass-assignable; set it explicitly (see AdminUserSeeder).
 #[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Hidden(['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'])]
 class User extends Authenticatable implements FilamentUser, MustVerifyEmailContract
 {
     /** @use HasFactory<UserFactory> */
@@ -45,6 +45,9 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
     protected $attributes = [
         'role' => UserRole::Customer->value,
         'is_adult_unlocked' => false,
+        'two_factor_secret' => null,
+        'two_factor_recovery_codes' => null,
+        'two_factor_confirmed_at' => null,
     ];
 
     protected function casts(): array
@@ -54,6 +57,9 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
             'is_adult_unlocked' => 'boolean',
             'adult_unlocked_at' => 'datetime',
             'age_confirmed_at' => 'datetime',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_recovery_codes' => 'encrypted:array',
+            'two_factor_confirmed_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
@@ -105,6 +111,12 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmailContr
     public function isStaff(): bool
     {
         return $this->role->isStaff();
+    }
+
+    /** Signs in with an authenticator-app code as well as the password. */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->two_factor_confirmed_at !== null && filled($this->two_factor_secret);
     }
 
     /** A member who confirmed their email (staff always count). Card content needs this. */

@@ -32,6 +32,7 @@ Route::prefix('v1')->name('v1.')->group(function () {
         Route::middleware('throttle:auth')->group(function () {
             Route::post('register', [AuthController::class, 'register'])->name('register');
             Route::post('login', [AuthController::class, 'login'])->name('login');
+            Route::post('two-factor', [AuthController::class, 'twoFactor'])->name('two-factor');
             Route::post('forgot-password', [PasswordResetController::class, 'forgot'])->name('password.forgot');
             Route::post('reset-password', [PasswordResetController::class, 'reset'])->name('password.reset');
         });

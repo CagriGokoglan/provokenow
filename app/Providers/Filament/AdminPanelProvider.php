@@ -2,11 +2,15 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Security;
+use App\Filament\Pages\TwoFactorChallenge;
+use App\Http\Middleware\RequireTwoFactor;
 use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
@@ -17,6 +21,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 /**
@@ -58,6 +63,11 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Pages\Dashboard::class,
             ])
+            // Step 2 of the sign-in (outside the 2FA gate itself).
+            ->routes(fn () => Route::get('two-factor-challenge', TwoFactorChallenge::class)->name('two-factor-challenge'))
+            ->userMenuItems([
+                MenuItem::make()->label('Security (2FA)')->icon('heroicon-o-shield-check')->url(fn () => Security::getUrl()),
+            ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->middleware([
                 EncryptCookies::class,
@@ -72,6 +82,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+                RequireTwoFactor::class,
+            ], isPersistent: true);
     }
 }

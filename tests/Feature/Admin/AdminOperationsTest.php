@@ -37,6 +37,8 @@ class AdminOperationsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // Two-factor sign-in has its own tests (TwoFactorTest); here staff are already past it.
+        config(['provoke.admin.require_two_factor' => false]);
         $this->admin = User::factory()->create();
         $this->admin->forceFill(['role' => UserRole::Admin])->save();
         $this->actingAs($this->admin);

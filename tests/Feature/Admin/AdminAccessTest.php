@@ -34,13 +34,16 @@ class AdminAccessTest extends TestCase
 
     public function test_admins_and_superadmins_can_open_every_section(): void
     {
+        // Past the two-factor step (covered by TwoFactorTest).
+        config(['provoke.admin.require_two_factor' => false]);
+
         foreach ([UserRole::Admin, UserRole::SuperAdmin] as $role) {
             $this->actingAs($this->user($role));
 
             foreach ([
                 '/admin', '/admin/decks', '/admin/decks/create', '/admin/products', '/admin/products/create', '/admin/orders', '/admin/users',
                 '/admin/deck-categories', '/admin/product-categories', '/admin/hero-slides', '/admin/hero-slides/create',
-                '/admin/instagram-posts', '/admin/site-settings', '/admin/club-signups',
+                '/admin/instagram-posts', '/admin/site-settings', '/admin/club-signups', '/admin/gifts', '/admin/security',
             ] as $url) {
                 $this->get($url)->assertOk();
             }

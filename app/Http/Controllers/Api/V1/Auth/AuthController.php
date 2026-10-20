@@ -9,6 +9,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\Gift;
 use App\Models\User;
+use App\Services\Auth\TwoFactor;
 use App\Services\Gifts\GiftService;
 use App\Support\ApiResponse;
 use Illuminate\Http\JsonResponse;
@@ -61,10 +62,33 @@ class AuthController extends Controller
             return ApiResponse::error('The provided credentials are incorrect.', 401);
         }
 
+        // Two-factor accounts get no token yet: a 5-minute challenge to exchange with a code.
+        if ($user->hasTwoFactorEnabled()) {
+            return ApiResponse::success(
+                ['requires_2fa' => true, 'challenge' => app(TwoFactor::class)->issueChallenge($user)],
+                'Enter the verification code from your authenticator app.',
+            );
+        }
+
         return ApiResponse::success(
             $this->tokenPayload($user, $request->input('device_name')),
             'Login successful.',
         );
+    }
+
+    /** Step 2 of a two-factor sign-in: the challenge from login() plus an app or recovery code. */
+    public function twoFactor(Request $request, TwoFactor $twoFactor): JsonResponse
+    {
+        $data = $request->validate([
+            'challenge' => ['required', 'string', 'max:2000'],
+            'code' => ['required', 'string', 'max:20'],
+            'device_name' => ['sometimes', 'string', 'max:100'],
+        ]);
+
+        $user = $twoFactor->userForChallenge($data['challenge']);
+        $twoFactor->check($user, $data['code']);
+
+        return ApiResponse::success($this->tokenPayload($user, $data['device_name'] ?? null), 'Login successful.');
     }
 
     public function logout(Request $request): JsonResponse

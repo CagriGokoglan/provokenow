@@ -31,7 +31,7 @@ class GiftResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'desc')
-            ->modifyQueryUsing(fn ($q) => $q->with(['order', 'sender']))
+            ->modifyQueryUsing(fn ($query) => $query->with(['order', 'sender']))
             ->columns([
                 Tables\Columns\TextColumn::make('order.order_number')->label('Order')->searchable()
                     ->url(fn (Gift $g) => OrderResource::getUrl('view', ['record' => $g->order_id])),

@@ -46,10 +46,14 @@ class AppServiceProvider extends ServiceProvider
         Model::shouldBeStrict(! $this->app->isProduction());
 
         RateLimiter::for('auth', function (Request $request) {
-            return [
+            $email = mb_strtolower(trim((string) $request->input('email')));
+
+            // Per visitor, and per account when an email is given (the two-factor step has none;
+            // its codes are limited per account inside TwoFactor).
+            return array_values(array_filter([
                 Limit::perMinute(10)->by('auth-ip:'.$request->ip()),
-                Limit::perMinute(5)->by('auth-email:'.mb_strtolower((string) $request->input('email'))),
-            ];
+                $email !== '' ? Limit::perMinute(5)->by('auth-email:'.$email) : null,
+            ]));
         });
 
         RateLimiter::for('club', fn (Request $request) => Limit::perMinute(5)->by('club:'.$request->ip()));
