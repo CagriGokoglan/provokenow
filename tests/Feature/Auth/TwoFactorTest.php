@@ -219,6 +219,19 @@ class TwoFactorTest extends TestCase
         $this->get('/admin')->assertOk();
     }
 
+    public function test_email_codes_can_go_to_a_configured_recovery_inbox(): void
+    {
+        Mail::fake();
+        config(['provoke.admin.two_factor_email' => 'owner-recovery@example.com']);
+        $admin = $this->admin(['email' => 'staff@example.com']);
+        $this->enable($admin);
+
+        app(TwoFactor::class)->sendEmailCode($admin);
+
+        Mail::assertSent(TwoFactorEmailCodeMailable::class, fn ($m) => $m->hasTo('owner-recovery@example.com') && ! $m->hasTo('staff@example.com'));
+        app(TwoFactor::class)->check($admin->fresh(), $this->sentEmailCode());
+    }
+
     public function test_customers_cannot_reach_the_admin_or_its_2fa_pages(): void
     {
         $this->actingAs(User::factory()->create());

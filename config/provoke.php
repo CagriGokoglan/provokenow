@@ -9,6 +9,8 @@ return [
     'admin' => [
         // Staff must use two-factor authentication: without it they are sent to set it up.
         'require_two_factor' => (bool) env('ADMIN_REQUIRE_2FA', true),
+        // Where "Lost access to device?" sign-in codes are emailed. Empty = the account's own address.
+        'two_factor_email' => env('ADMIN_2FA_EMAIL') ?: null,
         'name' => env('ADMIN_NAME', 'Provoke Now Admin'),
         'email' => env('ADMIN_EMAIL', 'admin@provokenow.com'),
         'password' => env('ADMIN_PASSWORD'),

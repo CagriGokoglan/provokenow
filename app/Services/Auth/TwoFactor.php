@@ -105,8 +105,8 @@ class TwoFactor
     }
 
     /**
-     * Emails a one-time 6-digit sign-in code to the account's own address (the fallback when the
-     * authenticator app is unavailable). Only its keyed hash is cached; a new code replaces the
+     * Emails a one-time 6-digit sign-in code to the recovery inbox (ADMIN_2FA_EMAIL, else the
+     * account's own address): the fallback when the authenticator app is unavailable. Only its keyed hash is cached; a new code replaces the
      * old one. Limited to EMAIL_CODE_MAX per EMAIL_CODE_WINDOW minutes per account and per IP.
      */
     public function sendEmailCode(User $user, ?string $ip = null): void
@@ -125,7 +125,13 @@ class TwoFactor
         Cache::put($this->emailCodeKey($user), $this->hashCode($code), now()->addMinutes(self::EMAIL_CODE_MINUTES));
 
         // Sent now (not queued): the person is waiting at the sign-in screen.
-        Mail::to($user->email)->send(new TwoFactorEmailCodeMailable($code, self::EMAIL_CODE_MINUTES));
+        Mail::to($this->emailCodeRecipient($user))->send(new TwoFactorEmailCodeMailable($code, self::EMAIL_CODE_MINUTES));
+    }
+
+    /** The configured recovery inbox (ADMIN_2FA_EMAIL), else the account's own address. */
+    public function emailCodeRecipient(User $user): string
+    {
+        return config('provoke.admin.two_factor_email') ?: $user->email;
     }
 
     /** Short-lived, encrypted proof that the password was right (site sign-in, step 1 of 2). */
